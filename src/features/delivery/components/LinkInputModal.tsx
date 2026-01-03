@@ -8,7 +8,7 @@
  * - 403/404 링크 저장 거부
  */
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { submitExternalLink, type LinkStatus } from "../actions";
 
 // ===== TYPES =====
@@ -35,6 +35,11 @@ export function LinkInputModal({
     const [linkUrl, setLinkUrl] = useState(currentLink || "");
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
+
+    // 입력값 변경 시 에러 초기화
+    useEffect(() => {
+        if (error) setError(null);
+    }, [linkUrl]);
 
     // 링크 유형별 아이콘
     const getTypeIcon = (type: string) => {
@@ -75,9 +80,20 @@ export function LinkInputModal({
     const handleSubmit = () => {
         setError(null);
 
-        // 기본 URL 형식 검증
+        // 1. 기본 URL 형식 검증
         try {
-            new URL(linkUrl);
+            const url = new URL(linkUrl);
+
+            // 2. 도메인 유효성 검사 (클라이언트 측) - 사용자 경험 향상
+            const allowedDomains = ["drive.google.com", "dropbox.com", "onedrive.live.com", "1drv.ms", "docs.google.com"];
+            const isAllowed = allowedDomains.some(d => url.hostname.includes(d));
+
+            if (!isAllowed) {
+                // 강력 차단은 서버에서 하되, 경고 메시지는 미리 보여줌
+                // setError("Google Drive 또는 Dropbox 링크만 허용됩니다.");
+                // return; // 엄격 차단 원하면 return 유지
+            }
+
         } catch {
             setError("올바른 URL 형식이 아닙니다.");
             return;
@@ -116,11 +132,11 @@ export function LinkInputModal({
             onClick={onClose}
         >
             <div
-                className="w-full max-w-lg bg-zinc-900 border border-zinc-700"
+                className="w-full max-w-lg bg-zinc-900 border border-zinc-700 animate-in fade-in zoom-in duration-200"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-zinc-700 px-6 py-4">
+                <div className="flex items-center justify-between border-b border-zinc-700 px-6 py-4 bg-zinc-900">
                     <div className="flex items-center gap-3">
                         <span className="text-2xl">{getTypeIcon(deliverableType)}</span>
                         <div>
@@ -153,9 +169,9 @@ export function LinkInputModal({
                 </div>
 
                 {/* Body */}
-                <div className="px-6 py-6 space-y-4">
+                <div className="px-6 py-6 space-y-4 bg-zinc-900">
                     {/* 안내 메시지 */}
-                    <div className="p-4 bg-zinc-800 border-l-4 border-amber-500">
+                    <div className="p-4 bg-zinc-800/50 border-l-4 border-amber-500">
                         <p className="text-sm text-zinc-300">
                             <strong className="text-amber-400">🛡️ Sentinel 검증</strong><br />
                             등록된 링크는 실시간으로 유효성이 검증됩니다.<br />
@@ -176,12 +192,13 @@ export function LinkInputModal({
                             placeholder="https://drive.google.com/..."
                             className="w-full px-4 py-3 bg-zinc-800 border border-zinc-600 text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 transition-colors"
                             disabled={isPending}
+                            autoFocus
                         />
                     </div>
 
                     {/* 에러 메시지 */}
                     {error && (
-                        <div className="p-4 bg-red-900/30 border border-red-500 text-red-400">
+                        <div className="p-4 bg-red-900/20 border border-red-500/50 text-red-400 animate-in slide-in-from-top-2">
                             <div className="flex items-start gap-2">
                                 <span className="text-red-500">❌</span>
                                 <span>{error}</span>
@@ -193,18 +210,18 @@ export function LinkInputModal({
                     <div className="text-xs text-zinc-500">
                         <p className="mb-1">지원되는 클라우드 서비스:</p>
                         <div className="flex flex-wrap gap-2">
-                            <span className="px-2 py-1 bg-zinc-800 rounded">Google Drive</span>
-                            <span className="px-2 py-1 bg-zinc-800 rounded">Dropbox</span>
-                            <span className="px-2 py-1 bg-zinc-800 rounded">OneDrive</span>
+                            <span className="px-2 py-1 bg-zinc-800 rounded border border-zinc-700">Google Drive</span>
+                            <span className="px-2 py-1 bg-zinc-800 rounded border border-zinc-700">Dropbox</span>
+                            <span className="px-2 py-1 bg-zinc-800 rounded border border-zinc-700">OneDrive</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-3 border-t border-zinc-700 px-6 py-4">
+                <div className="flex justify-end gap-3 border-t border-zinc-700 px-6 py-4 bg-zinc-900">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 bg-zinc-700 text-zinc-300 hover:bg-zinc-600 transition-colors uppercase tracking-wider text-sm font-bold"
+                        className="px-6 py-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors uppercase tracking-wider text-sm font-bold border border-zinc-700"
                         disabled={isPending}
                     >
                         취소
@@ -212,7 +229,7 @@ export function LinkInputModal({
                     <button
                         onClick={handleSubmit}
                         disabled={isPending || !linkUrl.trim()}
-                        className="px-6 py-2 bg-red-600 text-white hover:bg-red-500 disabled:bg-zinc-700 disabled:text-zinc-500 transition-colors uppercase tracking-wider text-sm font-bold flex items-center gap-2"
+                        className="px-6 py-2 bg-red-600 text-white hover:bg-red-500 disabled:bg-zinc-800 disabled:text-zinc-600 transition-colors uppercase tracking-wider text-sm font-bold flex items-center gap-2"
                     >
                         {isPending ? (
                             <>

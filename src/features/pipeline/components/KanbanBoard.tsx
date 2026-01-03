@@ -1,7 +1,22 @@
 "use client";
 
-import { DndContext, DragEndEvent, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from "@dnd-kit/core";
-import { useState, useMemo } from "react";
+import {
+    DndContext,
+    DragEndEvent,
+    DragOverEvent,
+    DragOverlay,
+    DragStartEvent,
+    PointerSensor,
+    TouchSensor,
+    closestCorners,
+    useSensor,
+    useSensors,
+} from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+import { Search, Filter, AlertTriangle } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { toast } from "sonner"; // 가정: sonner가 설치되어 있음 (package.json 확인됨)
+
 import { StageColumn } from "./StageColumn";
 import { TaskCard } from "./TaskCard";
 import { PipelineStage, PipelineCardWithDetails } from "../queries";
@@ -20,45 +35,124 @@ const STAGES: { id: PipelineStage; title: string }[] = [
 ];
 
 export function KanbanBoard({ initialCards }: KanbanBoardProps) {
-    // 낙관적 업데이트를 위해 로컬 상태 사용 (필요시)
-    // Server Action + revalidatePath 패턴에서는 보통 props 갱신을 기다림.
-    // 하지만 즉각적인 반응을 위해 로컬 state를 두는 것이 UX에 좋음.
     const [cards, setCards] = useState<PipelineCardWithDetails[]>(initialCards);
     const [activeId, setActiveId] = useState<string | null>(null);
+
+    // 필터 상태
+    const [searchQuery, setSearchQuery] = useState("");
+    const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
+
+    // 초기 데이터 동기화 (Server Action revalidatePath 대응)
+    useEffect(() => {
+        setCards(initialCards);
+    }, [initialCards]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 5, // 5px 이동해야 드래그 시작 (클릭 실수 방지)
+                distance: 5,
             },
         }),
         useSensor(TouchSensor)
     );
 
-    // 스테이지별 카드 분류
+    // 필터링된 카드 목록
+    const filteredCards = useMemo(() => {
+        return cards.filter((card) => {
+            const matchesSearch =
+                card.order?.user?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                card.order?.package?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                false;
+
+            const matchesAssignee =
+                assigneeFilter === "ALL" || card.assignee_id === assigneeFilter;
+
+            return matchesSearch && matchesAssignee;
+        });
+    }, [cards, searchQuery, assigneeFilter]);
+
+    // 스테이지별 카드 분류 (필터링 적용됨)
     const columns = useMemo(() => {
         const cols = STAGES.reduce((acc, stage) => {
             acc[stage.id] = [];
             return acc;
         }, {} as Record<PipelineStage, PipelineCardWithDetails[]>);
 
-        cards.forEach((card) => {
+        filteredCards.forEach((card) => {
             if (cols[card.stage]) {
                 cols[card.stage].push(card);
-            } else {
-                // 정의되지 않은 스테이지 예외 처리
-                // console.warn(`Card ${card.id} has unknown stage: ${card.stage}`);
             }
         });
         return cols;
-    }, [cards]);
+    }, [filteredCards]);
 
+    // 활성 카드 객체 (DragOverlay용)
     const activeCard = useMemo(() => {
         return cards.find((c) => c.id.toString() === activeId);
     }, [cards, activeId]);
 
-    const handleDragStart = (event: any) => {
-        setActiveId(event.active.id);
+    // 담당자 목록 추출 (Unique)
+    const assignees = useMemo(() => {
+        const unique = new Map();
+        initialCards.forEach((c) => {
+            if (c.assignee) {
+                unique.set(c.assignee_id, c.assignee.name);
+            }
+        });
+        return Array.from(unique.entries());
+    }, [initialCards]);
+
+    // --- DND Handlers ---
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id.toString());
+    };
+
+    const handleDragOver = (event: DragOverEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        const activeIdStr = active.id.toString();
+        const overIdStr = over.id.toString();
+
+        if (activeIdStr === overIdStr) return;
+
+        const isActiveTask = active.data.current?.sortable;
+        const isOverTask = over.data.current?.sortable;
+
+        if (!isActiveTask) return;
+
+        // 1. Task 위로 드래그 시 (리스트 재정렬/이동)
+        if (isActiveTask && isOverTask) {
+            setCards((prev) => {
+                const activeIndex = prev.findIndex((c) => c.id.toString() === activeIdStr);
+                const overIndex = prev.findIndex((c) => c.id.toString() === overIdStr);
+
+                if (prev[activeIndex].stage !== prev[overIndex].stage) {
+                    // 다른 스테이지로 이동 시
+                    const newCards = [...prev];
+                    newCards[activeIndex].stage = prev[overIndex].stage;
+                    return arrayMove(newCards, activeIndex, overIndex);
+                }
+
+                // 같은 스테이지 내 순서 변경 (Priority 시스템이 있다면 여기서 처리)
+                return arrayMove(prev, activeIndex, overIndex);
+            });
+        }
+
+        // 2. 컬럼 위로 드래그 시 (빈 공간 등)
+        const isOverColumn = STAGES.some((s) => s.id === overIdStr);
+        if (isActiveTask && isOverColumn) {
+            setCards((prev) => {
+                const activeIndex = prev.findIndex((c) => c.id.toString() === activeIdStr);
+                if (prev[activeIndex].stage !== overIdStr) {
+                    const newCards = [...prev];
+                    newCards[activeIndex].stage = overIdStr as PipelineStage;
+                    return arrayMove(newCards, activeIndex, activeIndex); // 위치 유지하며 stage만 변경
+                }
+                return prev;
+            });
+        }
     };
 
     const handleDragEnd = async (event: DragEndEvent) => {
@@ -68,66 +162,102 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
         if (!over) return;
 
         const activeIdStr = active.id.toString();
-        const overIdStr = over.id.toString(); // Stage ID (e.g., "SHOOTING") or Card ID
-
-        // Drop된 곳이 Stage 컬럼 자체인지 확인
-        // 만약 카드 위에 드롭했다면 그 카드의 부모를 찾아야 함(여기서는 Droppable id가 Stage 이름과 동일)
-        // Dnd-kit 구조상 StageColumn의 id를 Stage name으로 설정했음.
-        const newStage = overIdStr as PipelineStage;
-
-        // 유효한 Stage인지 검사 (Droppable ID가 Stage 이름 중 하나여야 함)
-        const isValidStage = STAGES.some((s) => s.id === newStage);
-        if (!isValidStage) return; // 카드 위에 드롭했을 때 처리 로직은 복잡해질 수 있음 (여기선 컬럼 드롭만 가정)
+        const overIdStr = over.id.toString();
 
         const card = cards.find((c) => c.id.toString() === activeIdStr);
         if (!card) return;
 
-        if (card.stage !== newStage) {
-            // 1. Optimistic Update
-            const originalStage = card.stage;
-            setCards((prev) =>
-                prev.map((c) =>
-                    c.id.toString() === activeIdStr ? { ...c, stage: newStage } : c
-                )
-            );
+        // 최종 목적지가 어떤 스테이지인지 판단
+        let newStage: PipelineStage | null = null;
+
+        if (STAGES.some((s) => s.id === overIdStr)) {
+            newStage = overIdStr as PipelineStage;
+        } else {
+            // Task 위에 드롭된 경우, 해당 Task의 스테이지를 따름
+            const overCard = cards.find((c) => c.id.toString() === overIdStr);
+            if (overCard) newStage = overCard.stage;
+        }
+
+        if (newStage && card.stage !== newStage) {
+            // Optimistic Update는 DragOver에서 이미 수행됨 (시각적으로)
+            // 실제 데이터 업데이트 요청
+            const previousStage = card.stage; // 백업용 (TODO: DragStart 시점의 스테이지를 저장해두는 것이 더 정확함)
 
             try {
-                // 2. Server Action Call
+                // 바로 반영된 상태라고 가정하고 Server Action 호출
                 await updateCardStage(card.id, newStage);
+                toast.success(`Moved to ${newStage}`);
             } catch (error) {
-                console.error("Failed to move card:", error);
+                console.error("Move failed:", error);
 
-                // 3. Rollback on Error
+                // Rollback
+                toast.error(`이동 실패: ${(error as Error).message}`);
                 setCards((prev) =>
                     prev.map((c) =>
-                        c.id.toString() === activeIdStr ? { ...c, stage: originalStage } : c
+                        c.id.toString() === activeIdStr ? { ...c, stage: previousStage as PipelineStage } : c
                     )
                 );
-                alert(`이동 실패: ${(error as Error).message}`);
             }
         }
     };
 
     return (
-        <DndContext
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-        >
-            <div className="flex h-full gap-4 overflow-x-auto pb-4">
-                {STAGES.map((stage) => (
-                    <StageColumn
-                        key={stage.id}
-                        stage={stage.id}
-                        title={stage.title}
-                        cards={columns[stage.id]}
-                    />
-                ))}
+        <div className="flex flex-col h-full gap-4">
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-card rounded-lg border border-border shadow-sm">
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <input
+                            type="text"
+                            placeholder="주문자 또는 패키지 검색..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 h-9 w-64 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <select
+                        value={assigneeFilter}
+                        onChange={(e) => setAssigneeFilter(e.target.value)}
+                        className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                        <option value="ALL">All Workers</option>
+                        {assignees.map(([id, name]) => (
+                            <option key={id} value={id}>{name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            <DragOverlay>
-                {activeCard ? <TaskCard card={activeCard} /> : null}
-            </DragOverlay>
-        </DndContext>
+            {/* Board Area */}
+            <div className="flex-1 overflow-x-auto overflow-y-hidden">
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCorners}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDragEnd={handleDragEnd}
+                >
+                    <div className="flex h-full gap-4 pb-4 min-w-max">
+                        {STAGES.map((stage) => (
+                            <StageColumn
+                                key={stage.id}
+                                stage={stage.id}
+                                title={stage.title}
+                                cards={columns[stage.id]}
+                            />
+                        ))}
+                    </div>
+
+                    <DragOverlay>
+                        {activeCard ? <TaskCard card={activeCard} /> : null}
+                    </DragOverlay>
+                </DndContext>
+            </div>
+        </div>
     );
 }

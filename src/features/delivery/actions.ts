@@ -7,6 +7,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 // ===== TYPES =====
 
@@ -178,6 +179,9 @@ export async function submitExternalLink(
         }
 
         console.log(`[Sentinel] ✅ Link saved for deliverable ${deliverableId}: ${validation.status}`);
+
+        revalidatePath("/admin/pipeline"); // UI 갱신 (트리거)
+        revalidatePath("/my-page"); // 고객 페이지도 갱신
 
         return {
             success: true,

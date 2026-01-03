@@ -7,6 +7,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { PackageWithShowcase, ShowcaseItem } from "@/features/showcase/queries";
 import { ComparisonPlayer, PackageCard } from "@/features/showcase/components";
 
@@ -16,22 +18,23 @@ type ShowcaseClientProps = {
 };
 
 export function ShowcaseClient({ eventName, packages }: ShowcaseClientProps) {
-    // 비교할 두 개의 패키지 선택 상태 (기본값: 첫 번째와 두 번째 패키지)
-    // 패키지가 하나뿐이면 비교 불가 처리
     const sortedPackages = [...packages].sort((a, b) => a.price - b.price);
 
+    // 비교 상태
     const [leftPackageId, setLeftPackageId] = useState<number>(sortedPackages[0]?.id || 0);
     const [rightPackageId, setRightPackageId] = useState<number>(
         sortedPackages.length > 1 ? sortedPackages[1].id : sortedPackages[0]?.id || 0
     );
 
-    const leftPackage = packages.find(p => p.id === leftPackageId);
-    const rightPackage = packages.find(p => p.id === rightPackageId);
+    const leftPackage = packages.find((p) => p.id === leftPackageId);
+    const rightPackage = packages.find((p) => p.id === rightPackageId);
 
     // 각 패키지의 대표 영상(Best Cut) 추출
     const getBestVideo = (pkg?: PackageWithShowcase): ShowcaseItem | undefined => {
-        return pkg?.showcase_items.find(item => item.type === "VIDEO" && item.is_best_cut)
-            || pkg?.showcase_items.find(item => item.type === "VIDEO");
+        return (
+            pkg?.showcase_items.find((item) => item.type === "VIDEO" && item.is_best_cut) ||
+            pkg?.showcase_items.find((item) => item.type === "VIDEO")
+        );
     };
 
     const leftVideo = getBestVideo(leftPackage);
@@ -42,84 +45,147 @@ export function ShowcaseClient({ eventName, packages }: ShowcaseClientProps) {
     return (
         <div className="space-y-16">
             {/* 1. 비교 플레이어 섹션 */}
-            <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                        <span className="w-2 h-8 bg-red-500 rounded-sm"></span>
-                        Quality Comparison
-                    </h2>
-                    <div className="text-sm text-zinc-500">
-                        {eventName}
+            <div className="space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-3xl font-black text-white flex items-center gap-3">
+                            <span className="w-2 h-8 bg-red-500 rounded-sm"></span>
+                            VISUAL QUALITY
+                        </h2>
+                        <p className="text-zinc-500 mt-1">
+                            {eventName} - 직접 눈으로 확인하고 선택하세요.
+                        </p>
+                    </div>
+
+                    {/* CTA Button */}
+                    <Link
+                        href={`/events/${leftPackage?.event_id}`}
+                        className="group relative inline-flex items-center justify-center px-8 py-3 font-bold text-white transition-all duration-200 bg-red-600 font-lg hover:bg-red-700"
+                    >
+                        <span>이 퀄리티로 주문하기</span>
+                        <svg className="w-5 h-5 ml-2 -mr-1 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        <div className="absolute inset-0 border-2 border-white/20 pointer-events-none group-hover:border-white/40"></div>
+                    </Link>
+                </div>
+
+                {/* 탭 컨트롤러 (비교 대상 선택) */}
+                <div className="bg-zinc-900/80 p-6 border border-zinc-800 backdrop-blur-sm rounded-xl">
+                    <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
+
+                        {/* LEFT CONTROL */}
+                        <div className="w-full md:w-1/3">
+                            <label className="flex items-center gap-2 text-xs font-bold text-red-500 uppercase mb-3 tracking-wider">
+                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                Left Screen (A)
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                                {sortedPackages.map((pkg) => (
+                                    <button
+                                        key={`left-${pkg.id}`}
+                                        onClick={() => setLeftPackageId(pkg.id)}
+                                        className={`
+                      relative px-4 py-2 text-sm font-bold border transition-all
+                      ${leftPackageId === pkg.id
+                                                ? "border-red-500 text-white bg-red-500/10"
+                                                : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300"
+                                            }
+                      ${pkg.id === rightPackageId ? "opacity-50 cursor-not-allowed hidden" : ""}
+                    `}
+                                        disabled={pkg.id === rightPackageId}
+                                    >
+                                        {leftPackageId === pkg.id && (
+                                            <motion.div
+                                                layoutId="active-tab-left"
+                                                className="absolute inset-0 bg-red-500/10 border border-red-500"
+                                                transition={{ duration: 0.2 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10">{pkg.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="text-zinc-600 font-black text-2xl">VS</div>
+
+                        {/* RIGHT CONTROL */}
+                        <div className="w-full md:w-1/3 text-right">
+                            <label className="flex items-center justify-end gap-2 text-xs font-bold text-blue-500 uppercase mb-3 tracking-wider">
+                                Right Screen (B)
+                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                            </label>
+                            <div className="flex flex-wrap gap-2 justify-end">
+                                {sortedPackages.map((pkg) => (
+                                    <button
+                                        key={`right-${pkg.id}`}
+                                        onClick={() => setRightPackageId(pkg.id)}
+                                        className={`
+                      relative px-4 py-2 text-sm font-bold border transition-all
+                      ${rightPackageId === pkg.id
+                                                ? "border-blue-500 text-white bg-blue-500/10"
+                                                : "border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-zinc-300"
+                                            }
+                      ${pkg.id === leftPackageId ? "opacity-50 cursor-not-allowed hidden" : ""}
+                    `}
+                                        disabled={pkg.id === leftPackageId}
+                                    >
+                                        {rightPackageId === pkg.id && (
+                                            <motion.div
+                                                layoutId="active-tab-right"
+                                                className="absolute inset-0 bg-blue-500/10 border border-blue-500"
+                                                transition={{ duration: 0.2 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10">{pkg.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {canCompare ? (
-                    <ComparisonPlayer
-                        leftItem={leftVideo}
-                        rightItem={rightVideo}
-                        leftLabel={leftPackage?.name}
-                        rightLabel={rightPackage?.name}
-                    />
-                ) : (
-                    <div className="aspect-video bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center text-zinc-500">
-                        <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-lg font-medium">비교할 영상이 충분하지 않습니다</p>
-                        <p className="text-sm">서로 다른 두 패키지의 영상 데이터가 필요합니다.</p>
-                    </div>
-                )}
-
-                {/* 비교 패키지 선택 컨트롤러 */}
-                <div className="grid grid-cols-2 gap-8 p-6 bg-zinc-900/50 border border-zinc-800 rounded-lg">
-                    {/* 왼쪽 선택 */}
-                    <div>
-                        <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Left Screen</label>
-                        <select
-                            value={leftPackageId}
-                            onChange={(e) => setLeftPackageId(Number(e.target.value))}
-                            className="w-full bg-zinc-950 border border-zinc-700 text-white p-3 rounded focus:border-red-500 focus:outline-none"
-                        >
-                            {sortedPackages.map(pkg => (
-                                <option key={pkg.id} value={pkg.id} disabled={pkg.id === rightPackageId}>
-                                    {pkg.name} - {pkg.price.toLocaleString()}원
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* 오른쪽 선택 */}
-                    <div className="text-right">
-                        <label className="block text-xs font-bold text-zinc-500 uppercase mb-2">Right Screen</label>
-                        <select
-                            value={rightPackageId}
-                            onChange={(e) => setRightPackageId(Number(e.target.value))}
-                            className="w-full bg-zinc-950 border border-zinc-700 text-white p-3 rounded focus:border-red-500 focus:outline-none text-right"
-                            dir="rtl"
-                        >
-                            {sortedPackages.map(pkg => (
-                                <option key={pkg.id} value={pkg.id} disabled={pkg.id === leftPackageId}>
-                                    {pkg.name} - {pkg.price.toLocaleString()}원
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                {/* Player Area */}
+                <div className="relative">
+                    <AnimatePresence mode="wait">
+                        {canCompare ? (
+                            <motion.div
+                                key={`${leftPackageId}-${rightPackageId}`}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <ComparisonPlayer
+                                    leftItem={leftVideo}
+                                    rightItem={rightVideo}
+                                    leftLabel={leftPackage?.name}
+                                    rightLabel={rightPackage?.name}
+                                />
+                            </motion.div>
+                        ) : (
+                            <div className="aspect-video bg-zinc-950 border border-zinc-800 flex flex-col items-center justify-center text-zinc-500">
+                                <p>영상을 불러올 수 없습니다.</p>
+                            </div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 
             {/* 2. 전체 패키지 라인업 */}
-            <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+            <div className="pt-20 border-t border-zinc-900">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-3 mb-8">
                     <span className="w-2 h-8 bg-zinc-700 rounded-sm"></span>
-                    All Packages
+                    LINE UP
                 </h2>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sortedPackages.map(pkg => (
+                    {sortedPackages.map((pkg) => (
                         <PackageCard
                             key={pkg.id}
                             package_={pkg}
-                            onSelect={() => {/* 쇼케이스에서는 선택 시 상세 페이지로 이동하도록 할 수도 있음 */ }}
+                            onSelect={() => {
+                                // 직접 주문 페이지로 이동하는 로직을 추가할 수도 있음
+                            }}
                         />
                     ))}
                 </div>
