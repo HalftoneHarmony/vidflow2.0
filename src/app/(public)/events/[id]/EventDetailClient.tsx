@@ -1,0 +1,191 @@
+/**
+ * 🛒 EventDetailClient Component
+ * 패키지 선택 및 결제 진행을 위한 클라이언트 컴포넌트
+ *
+ * @author Dealer (The Salesman)
+ */
+"use client";
+
+import { useState } from "react";
+import { PackageWithShowcase } from "@/features/showcase/queries";
+import { PackageCard } from "@/features/showcase/components";
+
+type EventDetailClientProps = {
+    packages: PackageWithShowcase[];
+    eventId: number;
+    isActive: boolean;
+};
+
+/**
+ * 가격 포맷터
+ */
+function formatPrice(price: number): string {
+    return new Intl.NumberFormat("ko-KR", {
+        style: "currency",
+        currency: "KRW",
+        maximumFractionDigits: 0,
+    }).format(price);
+}
+
+export function EventDetailClient({
+    packages,
+    eventId,
+    isActive,
+}: EventDetailClientProps) {
+    const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
+
+    const selectedPackage = packages.find((pkg) => pkg.id === selectedPackageId);
+
+    const handlePackageSelect = (packageId: number) => {
+        setSelectedPackageId((prev) => (prev === packageId ? null : packageId));
+    };
+
+    const handleProceedToPayment = () => {
+        if (!selectedPackage) return;
+
+        // TODO: PortOne SDK 연동
+        // 결제창 호출 로직이 여기에 구현됩니다
+        console.log("[Dealer] 결제 진행:", {
+            eventId,
+            packageId: selectedPackage.id,
+            packageName: selectedPackage.name,
+            amount: selectedPackage.price,
+        });
+
+        alert(`결제 기능은 곧 연동 예정입니다.\n\n패키지: ${selectedPackage.name}\n금액: ${formatPrice(selectedPackage.price)}`);
+    };
+
+    return (
+        <div className="grid lg:grid-cols-3 gap-8">
+            {/* 패키지 목록 (왼쪽 2/3) */}
+            <div className="lg:col-span-2">
+                <div className="grid sm:grid-cols-2 gap-6">
+                    {packages.map((pkg) => (
+                        <PackageCard
+                            key={pkg.id}
+                            package_={pkg}
+                            isSelected={selectedPackageId === pkg.id}
+                            onSelect={handlePackageSelect}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            {/* 주문 요약 (오른쪽 1/3) */}
+            <div className="lg:col-span-1">
+                <div className="sticky top-8">
+                    <div className="bg-zinc-900 border border-zinc-800 p-6">
+                        <h3 className="text-lg font-bold text-white mb-6 pb-4 border-b border-zinc-800">
+                            주문 요약
+                        </h3>
+
+                        {selectedPackage ? (
+                            <>
+                                {/* 선택된 패키지 정보 */}
+                                <div className="mb-6">
+                                    <div className="text-sm text-zinc-500 mb-1">선택한 패키지</div>
+                                    <div className="text-xl font-bold text-white">
+                                        {selectedPackage.name}
+                                    </div>
+                                </div>
+
+                                {/* 구성 요소 */}
+                                <div className="mb-6">
+                                    <div className="text-sm text-zinc-500 mb-2">포함 항목</div>
+                                    <ul className="space-y-2">
+                                        {selectedPackage.composition.map((item) => (
+                                            <li
+                                                key={item}
+                                                className="flex items-center gap-2 text-sm text-zinc-300"
+                                            >
+                                                <svg
+                                                    className="w-4 h-4 text-red-500 flex-shrink-0"
+                                                    fill="currentColor"
+                                                    viewBox="0 0 20 20"
+                                                >
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                        clipRule="evenodd"
+                                                    />
+                                                </svg>
+                                                <span>{item.replace(/_/g, " ")}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {/* 가격 */}
+                                <div className="flex items-center justify-between py-4 border-t border-zinc-800 mb-6">
+                                    <span className="text-zinc-400">결제 금액</span>
+                                    <span className="text-3xl font-black text-red-500">
+                                        {formatPrice(selectedPackage.price)}
+                                    </span>
+                                </div>
+
+                                {/* 결제 버튼 */}
+                                <button
+                                    onClick={handleProceedToPayment}
+                                    disabled={!isActive || selectedPackage.is_sold_out}
+                                    className={`
+                    w-full py-4 font-bold text-lg uppercase tracking-wider transition-all
+                    ${isActive && !selectedPackage.is_sold_out
+                                            ? "bg-red-500 text-white hover:bg-red-600 active:scale-[0.98]"
+                                            : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                                        }
+                  `}
+                                >
+                                    {!isActive
+                                        ? "판매 종료"
+                                        : selectedPackage.is_sold_out
+                                            ? "품절"
+                                            : "결제하기"}
+                                </button>
+
+                                {/* 안내 문구 */}
+                                <p className="text-xs text-zinc-600 text-center mt-4">
+                                    결제 완료 후 마이페이지에서 진행 상황을 확인하세요
+                                </p>
+                            </>
+                        ) : (
+                            /* 패키지 미선택 상태 */
+                            <div className="text-center py-8">
+                                <div className="text-6xl mb-4 opacity-30">👆</div>
+                                <p className="text-zinc-500">
+                                    구매할 패키지를
+                                    <br />
+                                    선택해 주세요
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 추가 안내 */}
+                    <div className="mt-4 p-4 bg-zinc-900/50 border border-zinc-800/50">
+                        <div className="flex items-start gap-3">
+                            <svg
+                                className="w-5 h-5 text-zinc-600 flex-shrink-0 mt-0.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                            <p className="text-xs text-zinc-600">
+                                결제 후 7일 이내 미착수 시 전액 환불 가능합니다.
+                                작업 시작 후에는 환불이 불가합니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default EventDetailClient;
