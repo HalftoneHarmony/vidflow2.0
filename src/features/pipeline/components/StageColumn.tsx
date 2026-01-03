@@ -9,9 +9,10 @@ interface StageColumnProps {
     stage: PipelineStage;
     title: string;
     cards: PipelineCardWithDetails[];
+    onCardClick?: (card: PipelineCardWithDetails) => void;
 }
 
-export function StageColumn({ stage, title, cards }: StageColumnProps) {
+export function StageColumn({ stage, title, cards, onCardClick }: StageColumnProps) {
     const { setNodeRef, isOver } = useDroppable({
         id: stage,
     });
@@ -44,7 +45,11 @@ export function StageColumn({ stage, title, cards }: StageColumnProps) {
             >
                 <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
                     {cards.map((card) => (
-                        <TaskCard key={card.id} card={card} />
+                        <TaskCard
+                            key={card.id}
+                            card={card}
+                            onClick={onCardClick}
+                        />
                     ))}
                     {cards.length === 0 && (
                         <div className="h-full flex items-center justify-center text-muted-foreground/30 text-xs italic p-4 border-2 border-dashed border-muted rounded-lg">

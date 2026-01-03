@@ -13,12 +13,14 @@ import {
     useSensors,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Search, Filter, AlertTriangle } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner"; // 가정: sonner가 설치되어 있음 (package.json 확인됨)
+import { useRouter } from "next/navigation";
 
 import { StageColumn } from "./StageColumn";
 import { TaskCard } from "./TaskCard";
+import { TaskDetailModal } from "./TaskDetailModal";
 import { PipelineStage, PipelineCardWithDetails } from "../queries";
 import { updateCardStage } from "../actions";
 
@@ -35,8 +37,13 @@ const STAGES: { id: PipelineStage; title: string }[] = [
 ];
 
 export function KanbanBoard({ initialCards }: KanbanBoardProps) {
+    const router = useRouter();
     const [cards, setCards] = useState<PipelineCardWithDetails[]>(initialCards);
     const [activeId, setActiveId] = useState<string | null>(null);
+
+    // 상세 모달 상태
+    const [selectedCard, setSelectedCard] = useState<PipelineCardWithDetails | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     // 필터 상태
     const [searchQuery, setSearchQuery] = useState("");
@@ -91,7 +98,7 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
         return cards.find((c) => c.id.toString() === activeId);
     }, [cards, activeId]);
 
-    // 담당자 목록 추출 (Unique)
+    // 담당자 목록 추출 (Unique) - 모달에도 전달하기 위해 활용
     const assignees = useMemo(() => {
         const unique = new Map();
         initialCards.forEach((c) => {
@@ -99,8 +106,20 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
                 unique.set(c.assignee_id, c.assignee.name);
             }
         });
-        return Array.from(unique.entries());
+        return Array.from(unique.entries()).map(([id, name]) => ({ id, name }));
     }, [initialCards]);
+
+    // --- Event Handlers ---
+
+    const handleCardClick = (card: PipelineCardWithDetails) => {
+        setSelectedCard(card);
+        setIsModalOpen(true);
+    };
+
+    const handleModalClose = () => {
+        setIsModalOpen(false);
+        setSelectedCard(null);
+    };
 
     // --- DND Handlers ---
 
@@ -187,6 +206,7 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
                 // 바로 반영된 상태라고 가정하고 Server Action 호출
                 await updateCardStage(card.id, newStage);
                 toast.success(`Moved to ${newStage}`);
+                router.refresh(); // 데이터 최신화
             } catch (error) {
                 console.error("Move failed:", error);
 
@@ -226,8 +246,8 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
                         className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
                         <option value="ALL">All Workers</option>
-                        {assignees.map(([id, name]) => (
-                            <option key={id} value={id}>{name}</option>
+                        {assignees.map((a) => (
+                            <option key={a.id} value={a.id}>{a.name}</option>
                         ))}
                     </select>
                 </div>
@@ -249,15 +269,27 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
                                 stage={stage.id}
                                 title={stage.title}
                                 cards={columns[stage.id]}
-                            />
+                                onCardClick={handleCardClick}
+                            /> // Card render 부분은 StageColumn 내에서 TaskCard를 호출할 때 onClick을 전달할 수 있도록 StageColumn도 수정이 필요하거나
+                            // 방법 1: StageColumn에 onCardClick prop 추가
+                            // 방법 2: Context API 사용
+                            // 여기서는 StageColumn을 수정해서 props pass-through 하는 게 가장 빠름.
                         ))}
                     </div>
 
                     <DragOverlay>
-                        {activeCard ? <TaskCard card={activeCard} /> : null}
+                        {activeCard ? <TaskCard card={activeCard} isOverlay /> : null}
                     </DragOverlay>
                 </DndContext>
             </div>
+
+            {/* Detail Modal */}
+            <TaskDetailModal
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+                card={selectedCard}
+                availableWorkers={assignees}
+            />
         </div>
     );
 }

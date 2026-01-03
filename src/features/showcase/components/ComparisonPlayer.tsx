@@ -124,7 +124,7 @@ export function ComparisonPlayer({
     return (
         <div className="bg-zinc-950 border border-zinc-800">
             {/* 비디오 영역 */}
-            <div className="grid grid-cols-2 gap-px bg-zinc-800">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-zinc-800">
                 {/* 왼쪽 비디오 */}
                 <div className="relative bg-black aspect-video">
                     <video
@@ -138,8 +138,8 @@ export function ComparisonPlayer({
                     {/* 라벨 */}
                     <div
                         className={`absolute top-3 left-3 px-3 py-1 text-xs font-bold uppercase tracking-wider ${activeAudio === "left"
-                                ? "bg-red-500 text-white"
-                                : "bg-zinc-900/80 text-zinc-400"
+                            ? "bg-red-500 text-white"
+                            : "bg-zinc-900/80 text-zinc-400"
                             }`}
                     >
                         {leftLabel}
@@ -148,8 +148,8 @@ export function ComparisonPlayer({
                     <button
                         onClick={() => toggleAudio("left")}
                         className={`absolute bottom-3 left-3 w-10 h-10 flex items-center justify-center transition-colors ${activeAudio === "left"
-                                ? "bg-red-500 text-white"
-                                : "bg-zinc-900/80 text-zinc-500 hover:text-white"
+                            ? "bg-red-500 text-white"
+                            : "bg-zinc-900/80 text-zinc-500 hover:text-white"
                             }`}
                     >
                         {activeAudio === "left" ? (
@@ -177,8 +177,8 @@ export function ComparisonPlayer({
                     {/* 라벨 */}
                     <div
                         className={`absolute top-3 right-3 px-3 py-1 text-xs font-bold uppercase tracking-wider ${activeAudio === "right"
-                                ? "bg-red-500 text-white"
-                                : "bg-zinc-900/80 text-zinc-400"
+                            ? "bg-red-500 text-white"
+                            : "bg-zinc-900/80 text-zinc-400"
                             }`}
                     >
                         {rightLabel}
@@ -187,8 +187,8 @@ export function ComparisonPlayer({
                     <button
                         onClick={() => toggleAudio("right")}
                         className={`absolute bottom-3 right-3 w-10 h-10 flex items-center justify-center transition-colors ${activeAudio === "right"
-                                ? "bg-red-500 text-white"
-                                : "bg-zinc-900/80 text-zinc-500 hover:text-white"
+                            ? "bg-red-500 text-white"
+                            : "bg-zinc-900/80 text-zinc-500 hover:text-white"
                             }`}
                     >
                         {activeAudio === "right" ? (

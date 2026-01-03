@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { PORTONE_CONFIG, PortOnePaymentResponse } from "@/lib/portone";
 
 /**
  * 주문 생성 입력 스키마 (Zod)
@@ -172,6 +173,82 @@ export async function createOrder(
             success: false,
             error: "주문 처리 중 오류가 발생했습니다.",
         };
+    }
+}
+
+/**
+ * PortOne 결제 검증 및 주문 생성 (Server Action)
+ * 클라이언트 및 Webhook에서 공통으로 사용
+ */
+export async function verifyAndCreateOrder(
+    paymentId: string,
+    userId: string,
+    eventId: number,
+    packageId: number,
+    expectedAmount: number
+): Promise<{ success: boolean; message: string; orderId?: number }> {
+    try {
+        console.log(`[Dealer] Verifying payment: ${paymentId}`);
+
+        // 1. Secret 유무 확인
+        if (!PORTONE_CONFIG.API_SECRET) {
+            console.error("[Dealer] Missing PORTONE_API_SECRET");
+            return { success: false, message: "서버 설정 오류: API Secret이 없습니다." };
+        }
+
+        // 2. PortOne API 호출 (결제 조회)
+        // V2 API: Authorization 헤더에 'PortOne <Secret>' 사용
+        const verifyRes = await fetch(`${PORTONE_CONFIG.API_BASE_URL}/payments/${paymentId}`, {
+            headers: {
+                "Authorization": `PortOne ${PORTONE_CONFIG.API_SECRET}`,
+                "Content-Type": "application/json",
+            },
+            cache: "no-store",
+        });
+
+        if (!verifyRes.ok) {
+            const errorBody = await verifyRes.json().catch(() => ({}));
+            console.error("[Dealer] PortOne Verify API Error:", verifyRes.status, errorBody);
+            return { success: false, message: "결제 검증 API 호출 실패" };
+        }
+
+        const paymentData: PortOnePaymentResponse = await verifyRes.json();
+
+        // 3. 데이터 검증
+        if (paymentData.status !== "PAID") {
+            console.warn(`[Dealer] Invalid Payment Status: ${paymentData.status}`);
+            return { success: false, message: `결제 상태가 유효하지 않습니다. (${paymentData.status})` };
+        }
+
+        // 금액 검증 (부동소수점 주의하지 않아도 되는 정수 - KRW)
+        if (paymentData.amount.paid !== expectedAmount) {
+            console.warn(`[Dealer] Amount Mismatch: Expected ${expectedAmount}, Got ${paymentData.amount.paid}`);
+            return { success: false, message: "결제 금액이 일치하지 않습니다." };
+        }
+
+        // 4. 주문 생성 (트랜잭션)
+        const result = await createOrder({
+            userId,
+            eventId,
+            packageId,
+            paymentId,
+            amount: paymentData.amount.paid
+        });
+
+        if (!result.success) {
+            if (result.error?.toLowerCase().includes("duplicate") || result.error?.toLowerCase().includes("unique")) {
+                console.log("[Dealer] Payment verified but order already exists (Idempotency).");
+                return { success: true, message: "이미 처리된 주문입니다. (중복)" };
+            }
+
+            return { success: false, message: result.error || "주문 생성 실패" };
+        }
+
+        return { success: true, message: "주문이 완료되었습니다.", orderId: result.orderId };
+
+    } catch (e) {
+        console.error("[Dealer] Verification Exception:", e);
+        return { success: false, message: "결제 처리 중 서버 에러가 발생했습니다." };
     }
 }
 

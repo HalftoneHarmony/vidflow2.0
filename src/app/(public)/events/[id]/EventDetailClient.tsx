@@ -8,10 +8,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import * as PortOne from "@portone/browser-sdk/v2";
 import { createClient } from "@/lib/supabase/client";
 import { PackageWithShowcase } from "@/features/showcase/queries";
 import { PackageCard } from "@/features/showcase/components";
-import { createOrder } from "@/features/orders/actions";
+import { verifyAndCreateOrder } from "@/features/orders/actions";
+import { PORTONE_CONFIG } from "@/lib/portone";
 
 type EventDetailClientProps = {
     packages: PackageWithShowcase[];
@@ -46,12 +48,14 @@ export function EventDetailClient({
     const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
     const [isProcessing, setIsProcessing] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
+    const [userEmail, setUserEmail] = useState<string | null>(null);
 
     // 현재 사용자 확인
     useEffect(() => {
         const supabase = createClient();
         supabase.auth.getUser().then(({ data }) => {
             setUserId(data.user?.id || null);
+            setUserEmail(data.user?.email || null);
         });
     }, []);
 
@@ -90,38 +94,78 @@ export function EventDetailClient({
             return;
         }
 
+        if (!PORTONE_CONFIG.STORE_ID || !PORTONE_CONFIG.CHANNEL_KEY) {
+            alert("결제 시스템 설정이 올바르지 않습니다. 관리자에게 문의하세요.");
+            console.error("Missing PortOne Config");
+            return;
+        }
+
         setIsProcessing(true);
 
         try {
-            const amount = calculateTotal();
+            const totalAmount = calculateTotal();
+            const paymentId = `ord_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
             // 1. PortOne 결제 요청 (Client Side)
-            // IMPLEMENTATION NOTREADY: PortOne SDK Integration
-            // const paymentResponse = await PortOne.requestPayment({ ... });
+            const response = await PortOne.requestPayment({
+                storeId: PORTONE_CONFIG.STORE_ID,
+                channelKey: PORTONE_CONFIG.CHANNEL_KEY,
+                paymentId: paymentId,
+                orderName: selectedPackage.name,
+                totalAmount: totalAmount,
+                currency: "CURRENCY_KRW",
+                payMethod: "CARD",
+                customer: {
+                    fullName: userEmail?.split("@")[0], // 이름 정보가 없으므로 이메일 아이디 사용
+                    email: userEmail || undefined,
+                    phoneNumber: "010-0000-0000", // 필수일 수 있으므로 더미 데이터 (실제론 사용자 프로필에서 가져와야 함)
+                },
+                customData: {
+                    userId,
+                    eventId,
+                    packageId: selectedPackage.id,
+                    options: Array.from(selectedOptions),
+                },
+            });
 
-            // MOCK: 결제 성공 시뮬레이션
-            const mockPaymentId = `imp_${Date.now()}`;
-            console.log("[Dealer] MOCK Payment Success:", mockPaymentId);
+            if (!response) {
+                console.error("PortOne payment request returned no response.");
+                alert("결제 처리 중 알 수 없는 오류가 발생했습니다. (응답 없음)");
+                setIsProcessing(false);
+                return;
+            }
 
-            // 2. 주문 생성 (Server Action)
-            const result = await createOrder({
+            // 2. 결제 에러 처리
+            if (response.code != null) {
+                // 결제 실패 또는 취소
+                console.warn("Payment failed/cancelled:", response);
+                alert(`결제가 취소되었거나 실패했습니다.\n사유: ${response.message}`);
+                setIsProcessing(false);
+                return;
+            }
+
+            // 3. 결제 성공 -> 서버 검증 및 주문 생성
+            // Webhook이 먼저 돌 수도 있지만, 클라이언트에서도 명시적으로 호출
+            const result = await verifyAndCreateOrder(
+                response.paymentId,
                 userId,
                 eventId,
-                packageId: selectedPackage.id,
-                paymentId: mockPaymentId,
-                amount,
-            });
+                selectedPackage.id,
+                totalAmount
+            );
 
             if (result.success) {
                 alert("주문이 성공적으로 완료되었습니다! 마이페이지로 이동합니다.");
                 router.push("/my-page");
             } else {
-                alert(`주문 생성 실패: ${result.error}`);
+                // 이미 Webhook에서 처리된 경우도 success 리턴되도록 actions 수정했으니 여기로 올 확률 낮음
+                alert(`주문 생성 실패: ${result.message}`);
+                // 결제는 되었는데 주문 생성이 안 된 심각한 상황 -> 관리자 컨택 포인트 안내 필요
             }
 
         } catch (error) {
-            console.error("Payment failed", error);
-            alert("결제 처리 중 오류가 발생했습니다.");
+            console.error("Payment Exception:", error);
+            alert("결제 처리 중 알 수 없는 오류가 발생했습니다.");
         } finally {
             setIsProcessing(false);
         }
