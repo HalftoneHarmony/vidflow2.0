@@ -16,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="dark">
-      <body className={`${fontVariables} antialiased`}>
+    <html lang="ko" className="dark" suppressHydrationWarning>
+      <body className={`${fontVariables} antialiased`} suppressHydrationWarning>
         {children}
         <Toaster position="top-right" richColors closeButton />
       </body>

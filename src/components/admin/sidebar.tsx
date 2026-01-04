@@ -46,17 +46,17 @@ export function AdminSidebar({ className, userName, userRole, siteName = "VidFlo
     };
 
     return (
-        <div className={cn("flex flex-col h-full bg-[#0A0A0A] border-r border-zinc-800", className)}>
+        <div className={cn("flex flex-col h-full bg-[#050505] border-r border-zinc-800", className)}>
             {/* Logo Section */}
-            <div className="p-6 border-b border-zinc-800">
+            <div className="p-6 border-b border-zinc-800/50 bg-black/20">
                 <Link href="/admin/dashboard" className="flex items-center gap-3 group">
                     {/* Logo Mark */}
-                    <div className="w-10 h-10 bg-red-600 flex items-center justify-center group-hover:bg-red-500 transition-colors">
+                    <div className="w-10 h-10 bg-red-600 flex items-center justify-center group-hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.5)]">
                         <span className="text-white font-bold text-xl font-[family-name:var(--font-oswald)]">{siteLogo}</span>
                     </div>
                     {/* Logo Text */}
                     <div className="flex flex-col">
-                        <span className="text-lg font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wider">
+                        <span className="text-lg font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wider group-hover:text-red-500 transition-colors">
                             {siteName}
                         </span>
                         <span className="text-[10px] text-zinc-500 uppercase tracking-widest">
@@ -67,7 +67,7 @@ export function AdminSidebar({ className, userName, userRole, siteName = "VidFlo
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
@@ -75,16 +75,19 @@ export function AdminSidebar({ className, userName, userRole, siteName = "VidFlo
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex items-center gap-3 px-4 py-3 border-l-2 transition-all duration-200 group",
+                                "flex items-center gap-3 px-4 py-3 border-l-2 transition-all duration-200 group relative",
                                 isActive
-                                    ? "text-white bg-zinc-800/50 border-red-500"
-                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/30 border-transparent hover:border-red-500/50"
+                                    ? "text-white bg-gradient-to-r from-red-900/20 to-transparent border-red-500"
+                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/20 border-transparent hover:border-red-500/30"
                             )}
                         >
-                            <span className={cn("text-lg", isActive ? "text-red-500" : "text-zinc-500 group-hover:text-red-400")}>
+                            <span className={cn(
+                                "text-lg transition-transform duration-300 group-hover:scale-110",
+                                isActive ? "text-red-500 drop-shadow-[0_0_8px_rgba(220,38,38,0.5)]" : "text-zinc-500 group-hover:text-red-400"
+                            )}>
                                 <item.icon className="w-5 h-5" />
                             </span>
-                            <div className="flex flex-col">
+                            <div className="flex flex-col transition-transform duration-200 group-hover:translate-x-1">
                                 <span className={cn(
                                     "text-sm font-medium font-[family-name:var(--font-oswald)] uppercase tracking-wide",
                                     isActive ? "text-white" : "text-zinc-400 group-hover:text-white"
@@ -101,9 +104,9 @@ export function AdminSidebar({ className, userName, userRole, siteName = "VidFlo
             </nav>
 
             {/* Sidebar Footer - User Profile & Logout */}
-            <div className="p-4 border-t border-zinc-800 space-y-3">
+            <div className="p-4 border-t border-zinc-800/50 bg-black/20 space-y-3">
                 {/* User Info */}
-                <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900/30 border border-zinc-800/50">
+                <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900/30 border border-zinc-800/50 backdrop-blur-sm">
                     <div className="w-8 h-8 bg-red-600/20 flex items-center justify-center border border-red-900/50">
                         <span className="text-red-500 text-sm font-bold">
                             {userName?.charAt(0).toUpperCase() || "A"}
@@ -124,10 +127,10 @@ export function AdminSidebar({ className, userName, userRole, siteName = "VidFlo
                     <Button
                         type="submit"
                         variant="ghost"
-                        className="w-full justify-start gap-2 text-zinc-500 hover:text-red-500 hover:bg-red-950/20 border border-transparent hover:border-red-900/50 transition-all"
+                        className="w-full justify-start gap-2 text-zinc-500 hover:text-red-500 hover:bg-red-950/10 border border-transparent hover:border-red-900/50 transition-all uppercase tracking-wider text-xs font-bold"
                     >
                         <LogOut className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase tracking-wider">Logout</span>
+                        <span>Logout</span>
                     </Button>
                 </form>
             </div>

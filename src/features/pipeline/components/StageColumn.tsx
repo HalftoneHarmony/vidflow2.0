@@ -4,6 +4,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { PipelineCardWithDetails, PipelineStage } from "../queries";
 import { TaskCard } from "./TaskCard";
+import { motion } from "framer-motion";
 
 interface StageColumnProps {
     stage: PipelineStage;
@@ -25,13 +26,18 @@ export function StageColumn({ stage, title, cards, color, onCardClick, selection
     const styles = getStageStyles(color);
 
     return (
-        <div className="flex flex-col flex-1 min-w-[300px] h-full transition-all duration-300">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col flex-1 min-w-[300px] h-full transition-all duration-300"
+        >
             {/* Column Header */}
             <div className={`
-                flex items-center justify-between p-3 mb-3 rounded-xl border transition-all duration-300
+                glass-panel flex items-center justify-between p-3 mb-3 rounded-xl border transition-all duration-300
                 ${isOver
                     ? "bg-red-950/30 border-red-500/50 shadow-[0_0_15px_rgba(220,38,38,0.2)]"
-                    : `${styles.headerBg} ${styles.borderColor} backdrop-blur-sm`
+                    : `${styles.headerBg} ${styles.borderColor}`
                 }
             `}>
                 <div className="flex items-center gap-3">
@@ -57,8 +63,8 @@ export function StageColumn({ stage, title, cards, color, onCardClick, selection
                 className={`
                     flex-1 p-2 rounded-xl transition-all duration-300 overflow-y-auto min-h-[150px] custom-scrollbar border
                     ${isOver
-                        ? "bg-red-900/5 border-red-500/20"
-                        : `bg-transparent ${styles.bodyBorder}`
+                        ? "bg-red-900/10 border-red-500/20"
+                        : `bg-zinc-900/20 ${styles.bodyBorder}`
                     }
                 `}
             >
@@ -90,7 +96,7 @@ export function StageColumn({ stage, title, cards, color, onCardClick, selection
                     )}
                 </SortableContext>
             </div>
-        </div>
+        </motion.div>
     );
 }
 
@@ -98,40 +104,40 @@ function getStageStyles(color: string) {
     switch (color) {
         case "purple":
             return {
-                borderColor: "border-purple-500/30",
-                headerBg: "bg-purple-950/20",
+                borderColor: "border-purple-500/20",
+                headerBg: "bg-purple-950/10",
                 dotColor: "bg-purple-500 text-purple-500",
-                badgeBg: "bg-purple-950/40",
+                badgeBg: "bg-purple-950/30",
                 badgeText: "text-purple-400",
-                bodyBorder: "border-purple-500/10",
+                bodyBorder: "border-purple-500/5",
             };
         case "orange":
             return {
-                borderColor: "border-orange-500/30",
-                headerBg: "bg-orange-950/20",
+                borderColor: "border-orange-500/20",
+                headerBg: "bg-orange-950/10",
                 dotColor: "bg-orange-500 text-orange-500",
-                badgeBg: "bg-orange-950/40",
+                badgeBg: "bg-orange-950/30",
                 badgeText: "text-orange-400",
-                bodyBorder: "border-orange-500/10",
+                bodyBorder: "border-orange-500/5",
             };
         case "green":
             return {
-                borderColor: "border-green-500/30",
-                headerBg: "bg-green-950/20",
+                borderColor: "border-green-500/20",
+                headerBg: "bg-green-950/10",
                 dotColor: "bg-green-500 text-green-500",
-                badgeBg: "bg-green-950/40",
+                badgeBg: "bg-green-950/30",
                 badgeText: "text-green-400",
-                bodyBorder: "border-green-500/10",
+                bodyBorder: "border-green-500/5",
             };
         case "zinc":
         default:
             return {
                 borderColor: "border-zinc-800/50",
-                headerBg: "bg-zinc-900/40",
+                headerBg: "bg-zinc-900/30",
                 dotColor: "bg-zinc-500 text-zinc-500",
-                badgeBg: "bg-zinc-950/50",
+                badgeBg: "bg-zinc-950/30",
                 badgeText: "text-zinc-500",
-                bodyBorder: "border-transparent",
+                bodyBorder: "border-zinc-800/20",
             };
     }
 }

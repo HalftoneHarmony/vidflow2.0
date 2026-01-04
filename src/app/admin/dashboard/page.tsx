@@ -65,7 +65,7 @@ function OperationalStatCard({
     };
 
     return (
-        <div className={`bg-black border p-6 flex flex-col justify-between h-full ${colorStyles[color].split(" ")[0]}`}>
+        <div className={`glass-panel p-6 flex flex-col justify-between h-full bg-noise transition-all duration-300 hover:border-zinc-700/50 ${colorStyles[color].split(" ")[0]}`}>
             <div className="flex justify-between items-start mb-4">
                 <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">{label}</span>
                 {icon && <span className={colorStyles[color].split(" ")[1]}>{icon}</span>}
@@ -92,14 +92,14 @@ function UpcomingEventRow({ event }: { event: any }) {
     const isToday = dDay === 0;
 
     return (
-        <div className="group flex items-center justify-between p-4 border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-all">
+        <div className="glass-panel group flex items-center justify-between p-4 bg-zinc-900/20 hover:bg-zinc-900/40 transition-all border-l-4 border-l-transparent hover:border-l-red-600">
             <div className="flex items-center gap-4">
-                <div className={`flex flex-col items-center justify-center w-12 h-12 border ${isToday ? "border-red-500 bg-red-500/10 text-red-500" : "border-zinc-700 bg-black text-zinc-400"}`}>
+                <div className={`flex flex-col items-center justify-center w-12 h-12 border rounded-lg ${isToday ? "border-red-500 bg-red-500/10 text-red-500" : "border-zinc-700 bg-black/50 text-zinc-400"}`}>
                     <span className="text-[10px] font-bold uppercase">{format(new Date(event.event_date), "MMM")}</span>
                     <span className="text-lg font-black">{format(new Date(event.event_date), "dd")}</span>
                 </div>
                 <div>
-                    <h3 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                    <h3 className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">
                         {event.title}
                     </h3>
                     <p className="text-xs text-zinc-500 flex items-center gap-2 mt-0.5">
@@ -111,7 +111,7 @@ function UpcomingEventRow({ event }: { event: any }) {
             </div>
             <div className="text-right">
                 {isToday ? (
-                    <span className="inline-block px-2 py-1 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider">
+                    <span className="inline-block px-2 py-1 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider box-shadow-[0_0_10px_red]">
                         D-DAY
                     </span>
                 ) : (
