@@ -3,6 +3,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { GlobalSearch } from "@/components/admin/global-search";
 
 /**
  * 🛠 Admin Layout (Responsive)
@@ -78,6 +79,9 @@ export default async function AdminLayout({
 
                     {/* Right: Status & Actions */}
                     <div className="flex items-center gap-2 md:gap-4">
+                        {/* Global Search */}
+                        <GlobalSearch />
+
                         {/* System Status (Desktop Only) */}
                         <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800">
                             <span className="w-2 h-2 bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></span>

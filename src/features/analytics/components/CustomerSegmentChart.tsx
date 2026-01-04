@@ -162,6 +162,7 @@ export function CustomerSegmentChart({ data }: Props) {
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
+                            // @ts-expect-error - Recharts type definition missing activeIndex
                             activeIndex={activeIndex}
                             activeShape={renderActiveShape}
                             data={chartData}
@@ -194,8 +195,8 @@ export function CustomerSegmentChart({ data }: Props) {
                         <motion.div
                             key={seg.name}
                             className={`flex items-center justify-between p-2 border transition-all cursor-pointer ${isActive
-                                    ? "bg-zinc-800/50 border-zinc-600"
-                                    : "border-transparent hover:border-zinc-700"
+                                ? "bg-zinc-800/50 border-zinc-600"
+                                : "border-transparent hover:border-zinc-700"
                                 }`}
                             onMouseEnter={() => setActiveIndex(index)}
                             whileHover={{ x: 4 }}

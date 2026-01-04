@@ -59,16 +59,19 @@ src/
 
 ### 태스크 목록
 
-#### 1. Support 페이지 UI 개선
+#### 1. Support 페이지 UI 개선 ✅ DONE
 **위치**: `src/app/(public)/support/SupportPageClient.tsx`
 
-현재 기능은 작동하지만 디자인을 Heavy Metal 테마에 맞게 개선 필요:
-- FAQ 아코디언 애니메이션 추가
-- 카테고리별 필터링 UI
-- Contact Form 검증 피드백 개선
-- 모바일 반응형 최적화
+Heavy Metal 테마에 맞게 디자인 개선 완료:
+- ✅ FAQ 아코디언 애니메이션 추가 (smooth expand/collapse)
+- ✅ 카테고리별 필터링 UI (일반/주문/결제/계정/서비스)
+- ✅ FAQ 검색 기능 추가
+- ✅ Contact Form 검증 피드백 개선 (실시간 유효성 검사)
+- ✅ 모바일 반응형 최적화 (가로 스크롤 탭)
+- ✅ 성공 애니메이션 오버레이
+- ✅ 향상된 스타일링 및 아이콘
 
-#### 2. 사용자 설정 페이지 생성
+#### 2. 사용자 설정 페이지 생성 ✅ DONE
 **위치**: `src/app/(public)/settings/page.tsx` (신규 생성)
 
 사용할 액션:
@@ -76,68 +79,62 @@ src/
 import { getUserPreferences, updateUserPreferences } from "@/features/admin/actions";
 ```
 
-필요한 UI:
-- 이메일 알림 토글
-- SMS 알림 토글
-- 언어 선택 (ko/en)
-- 테마 선택 (light/dark/system)
-- 타임존 선택
+구현된 UI:
+- ✅ 이메일 알림 토글
+- ✅ SMS 알림 토글
+- ✅ 언어 선택 (ko/en) - 카드 스타일
+- ✅ 테마 선택 (light/dark/system) - 카드 스타일
+- ✅ 타임존 선택 드롭다운
+- ✅ 저장 버튼 (플로팅 스타일)
+- ✅ Heavy Metal 테마 적용
 
-#### 3. 공지사항 모달 컴포넌트
+#### 3. 공지사항 모달 컴포넌트 ✅ DONE
 **위치**: `src/components/ui/announcement-modal.tsx` (신규 생성)
 
-대시보드에서 공지사항 클릭 시 상세 보기 모달
+구현된 기능:
+- ✅ 타입별 다른 색상/아이콘 (info/warning/promotion/maintenance/urgent)
+- ✅ 고정 배지 표시
+- ✅ 날짜 포맷팅
+- ✅ 긴급 공지 시 상단 애니메이션 바
+- ✅ Heavy Metal 테마 적용
+
 
 ---
 
-## 👤 에이전트 2: 관리자 기능 마스터
+## 👤 에이전트 2: 관리자 기능 마스터 ✅ DONE
 
 ### 🎯 미션: 문의 관리 & 활동 로그 UI
 
 ### 태스크 목록
 
-#### 1. 문의 관리 페이지
-**위치**: `src/app/admin/contacts/page.tsx` (신규 생성)
+#### 1. 문의 관리 페이지 ✅ DONE
+**위치**: `src/app/admin/contacts/ContactsClient.tsx`
 
-사용할 액션:
-```typescript
-import { getContactSubmissions, updateContactStatus } from "@/features/admin/actions";
-```
+구현 완료:
+- ✅ 문의 목록 테이블 (상태별 필터링 + 검색)
+- ✅ 상태 변경 버튼 (pending → in_progress → resolved → closed)
+- ✅ 관리자 메모 입력
+- ✅ 상세 보기 모달 (연락처 정보, 문의 내용, 상태 변경)
 
-필요한 UI:
-- 문의 목록 테이블 (상태별 필터링)
-- 상태 변경 드롭다운 (pending → in_progress → resolved → closed)
-- 관리자 메모 입력
-- 상세 보기 모달
+#### 2. 활동 로그 뷰어 ✅ DONE
+**위치**: `src/app/admin/logs/LogsClient.tsx`
 
-#### 2. 활동 로그 뷰어
-**위치**: `src/app/admin/logs/page.tsx` (신규 생성)
+구현 완료:
+- ✅ 타임라인 형태 로그 표시 (날짜별 그룹화)
+- ✅ 액션 타입별 필터링 (다중 선택)
+- ✅ 사용자별 필터링
+- ✅ 날짜 범위 필터
+- ✅ 더 불러오기 (페이지네이션)
 
-사용할 액션:
-```typescript
-import { getRecentActivityLogs } from "@/features/admin/actions";
-```
+#### 3. 공지사항 관리 페이지 ✅ DONE
+**위치**: `src/app/admin/announcements/AnnouncementsClient.tsx`
 
-필요한 UI:
-- 타임라인 형태 로그 표시
-- 액션 타입별 필터링
-- 사용자별 필터링
-- 날짜 범위 필터
-
-#### 3. 공지사항 관리 페이지
-**위치**: `src/app/admin/announcements/page.tsx` (신규 생성)
-
-사용할 액션:
-```typescript
-import { getActiveAnnouncements, createAnnouncement } from "@/features/admin/actions";
-```
-
-필요한 UI:
-- 공지사항 목록
-- 새 공지사항 생성 폼
-- 타입 선택 (info/warning/promotion/maintenance/urgent)
-- 만료일 설정
-- 고정 여부 토글
+구현 완료:
+- ✅ 공지사항 목록 (타입별 아이콘 및 색상)
+- ✅ 새 공지사항 생성 폼 (모달)
+- ✅ 타입 선택 (info/warning/promotion/maintenance/urgent)
+- ✅ 만료일 설정
+- ✅ 고정 여부 토글
 
 ---
 
