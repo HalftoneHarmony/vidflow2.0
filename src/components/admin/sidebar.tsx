@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BarChart3, Grip, Wallet, Package as PackageIcon, Users, Truck, LogOut } from "lucide-react";
+import { BarChart3, Grip, Wallet, Package as PackageIcon, Users, Truck, LogOut, Calendar, Film, HelpCircle, Info } from "lucide-react";
 import { signOut } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 
@@ -14,13 +14,15 @@ import { Button } from "@/components/ui/button";
  * @author Vulcan (The Forge Master)
  */
 
-// Navigation Items with Icons - All admin routes use /admin prefix
 const navItems = [
     { href: "/admin/dashboard", icon: BarChart3, label: "Dashboard", description: "수익 분석 및 KPI" },
     { href: "/admin/pipeline", icon: Grip, label: "Pipeline", description: "칸반 보드" },
+    { href: "/admin/events", icon: Calendar, label: "Events", description: "대회 관리" },
     { href: "/admin/delivery", icon: Truck, label: "Delivery", description: "전송 관리" },
     { href: "/admin/finance", icon: Wallet, label: "Finance", description: "매출/지출 관리" },
     { href: "/admin/products", icon: PackageIcon, label: "Products", description: "패키지 관리" },
+    { href: "/admin/showcase", icon: Film, label: "Showcase", description: "쇼케이스 관리" },
+    { href: "/admin/about", icon: Info, label: "About", description: "소개 페이지 관리" },
     { href: "/admin/users", icon: Users, label: "Users", description: "사용자 관리" },
 ];
 

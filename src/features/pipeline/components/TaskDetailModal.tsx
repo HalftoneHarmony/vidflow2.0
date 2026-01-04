@@ -261,7 +261,6 @@ export function TaskDetailModal({ card, isOpen, onClose, availableWorkers }: Tas
 function getStatusColor(stage: string): string {
     switch (stage) {
         case "WAITING": return "bg-zinc-800 text-zinc-300";
-        case "SHOOTING": return "bg-blue-900/50 text-blue-300 border border-blue-900";
         case "EDITING": return "bg-purple-900/50 text-purple-300 border border-purple-900";
         case "READY": return "bg-orange-900/50 text-orange-300 border border-orange-900";
         case "DELIVERED": return "bg-green-900/50 text-green-300 border border-green-900";

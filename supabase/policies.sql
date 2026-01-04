@@ -11,32 +11,37 @@ DROP POLICY IF EXISTS "Admins can manage events" ON public.events;
 DROP POLICY IF EXISTS "Anyone can view packages" ON public.packages;
 DROP POLICY IF EXISTS "Admins can manage packages" ON public.packages;
 
+-- 0. HELPER FUNCTIONS (To avoid Recursion)
+CREATE OR REPLACE FUNCTION public.check_is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'ADMIN'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 1. PROFILES
 -- 사용자는 자신의 프로필만 볼 수 있음
 CREATE POLICY "Users can view own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id);
 
--- 관리자는 모든 프로필을 보고 수정할 수 있음
+-- 관리자는 모든 프로필을 보고 수정할 수 있음 (함수 사용)
 CREATE POLICY "Admins can view all profiles" ON public.profiles
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN')
-  );
+  FOR SELECT USING (public.check_is_admin());
 
 CREATE POLICY "Admins can update all profiles" ON public.profiles
-  FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN')
-  );
+  FOR UPDATE USING (public.check_is_admin());
 
 -- 2. EVENTS (Public Area)
 -- (public) 누구나 '활성' 상태의 대회를 조회 가능
 CREATE POLICY "Anyone can view active events" ON public.events
-  FOR SELECT USING (is_active = true OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN'));
+  FOR SELECT USING (is_active = true OR public.check_is_admin());
 
 -- 관리자만 대회를 생성/수정/삭제 가능
 CREATE POLICY "Admins can manage events" ON public.events
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN')
-  );
+  FOR ALL USING (public.check_is_admin());
 
 -- 3. PACKAGES (Public Area)
 -- (public) 누구나 패키지 정보를 조회 가능
@@ -45,19 +50,18 @@ CREATE POLICY "Anyone can view packages" ON public.packages
 
 -- 관리자만 패키지 관리 가능
 CREATE POLICY "Admins can manage packages" ON public.packages
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN')
-  );
+  FOR ALL USING (public.check_is_admin());
 
 -- 4. SHOWCASE ITEMS
 -- (public) 누구나 쇼케이스 조회 가능
 CREATE POLICY "Anyone can view showcase items" ON public.showcase_items
   FOR SELECT USING (true);
 
+-- 관리자만 쇼케이스 아이템 관리 (CUD) 가능
 CREATE POLICY "Admins can manage showcase items" ON public.showcase_items
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'ADMIN')
-  );
+  FOR ALL 
+  TO authenticated
+  USING (public.check_is_admin());
 
 -- 5. ORDERS (Private)
 -- 본인의 주문만 조회 가능

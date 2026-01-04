@@ -108,7 +108,8 @@ export function ExpenseDetailSection({ expenses, eventList }: ExpenseDetailSecti
         const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `expenses_${new Date().toISOString().split("T")[0]}.csv`;
+        const yyyymmdd = new Date().toISOString().split("T")[0].replace(/-/g, "");
+        link.download = `vidflow_expenses_${yyyymmdd}.csv`;
         link.click();
     };
 

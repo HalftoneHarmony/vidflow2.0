@@ -123,8 +123,8 @@ export async function createLaborExpense(cardId: number): Promise<LaborCostResul
 
         console.log(`✅ 인건비 자동 등록: ${description} - ${expense.amount}원`);
 
-        // 캐시 무효화
-        revalidatePath("/dashboard/finance");
+        revalidatePath("/admin/finance");
+        revalidatePath("/admin/dashboard");
 
         return {
             success: true,
@@ -169,7 +169,8 @@ export async function addManualExpense(input: ExpenseInput): Promise<{ success: 
 
     console.log(`📝 수동 비용 등록: ${input.description} - ${input.amount}원 (ID: ${data.id})`);
 
-    revalidatePath("/dashboard/finance");
+    revalidatePath("/admin/finance");
+    revalidatePath("/admin/dashboard");
 
     return { success: true };
 }
@@ -207,7 +208,8 @@ export async function deleteExpense(expenseId: number): Promise<{ success: boole
         return { success: false, error: "비용 삭제에 실패했습니다." };
     }
 
-    revalidatePath("/dashboard/finance");
+    revalidatePath("/admin/finance");
+    revalidatePath("/admin/dashboard");
 
     return { success: true };
 }
@@ -248,7 +250,24 @@ export async function updateExpense(
         return { success: false, error: "비용 수정에 실패했습니다." };
     }
 
-    revalidatePath("/dashboard/finance");
+    revalidatePath("/admin/finance");
+    revalidatePath("/admin/dashboard");
 
     return { success: true };
 }
+
+// ============================================
+// Data Fetching Actions
+// ============================================
+
+import { getEventDetailedAnalysis, type EventDetailedAnalysis } from "./queries";
+
+export async function fetchEventAnalysis(eventId: number): Promise<EventDetailedAnalysis | null> {
+    try {
+        return await getEventDetailedAnalysis(eventId);
+    } catch (error) {
+        console.error("Failed to fetch event analysis:", error);
+        return null;
+    }
+}
+

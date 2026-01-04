@@ -269,3 +269,129 @@ export async function getAllEventsProfitSummary(): Promise<{
         totalNetProfit,
     };
 }
+
+// ============================================
+// Detailed Analysis Query
+// ============================================
+
+export type EventDetailedAnalysis = {
+    eventId: number;
+    eventTitle: string;
+    summary: {
+        totalParticipants: number;
+        totalRevenue: number;
+        netProfit: number;
+        totalExpenses: number;
+        profitMargin: number;
+    };
+    revenueByPackage: {
+        packageId: number;
+        packageName: string;
+        count: number;
+        revenue: number;
+    }[];
+    topSellingPackage: {
+        name: string;
+        count: number;
+        revenue: number;
+    } | null;
+};
+
+/**
+ * 특정 이벤트에 대한 상세 분석 (참가자, 패키지별 수익 등)
+ */
+export async function getEventDetailedAnalysis(eventId: number): Promise<EventDetailedAnalysis> {
+    const supabase = await createClient();
+
+    // 1. 이벤트 정보
+    const { data: event, error: eventError } = await supabase
+        .from("events")
+        .select("title")
+        .eq("id", eventId)
+        .single();
+
+    if (eventError || !event) {
+        throw new Error("Cannot find event");
+    }
+
+    // 2. Orders (Revenue & Participants)
+    const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("user_id, amount, package_id")
+        .eq("event_id", eventId)
+        .eq("status", "PAID");
+
+    if (ordersError) {
+        throw new Error("Failed to load orders");
+    }
+
+    // 3. Packages (Names)
+    const { data: packages, error: packagesError } = await supabase
+        .from("packages")
+        .select("id, name")
+        .eq("event_id", eventId);
+
+    if (packagesError) {
+        throw new Error("Failed to load packages");
+    }
+
+    // 4. Calculate Summary
+    const uniqueParticipants = new Set(orders?.map(o => o.user_id).filter(Boolean)).size;
+    const totalRevenue = orders?.reduce((acc, curr) => acc + (curr.amount || 0), 0) ?? 0;
+
+    // Existing profit calc logic (reused partially)
+    const pgFees = Math.round(totalRevenue * PG_FEE_RATE);
+    const { data: expenses } = await supabase
+        .from("expenses")
+        .select("amount")
+        .eq("event_id", eventId);
+
+    const totalExpensesRaw = expenses?.reduce((acc, curr) => acc + (curr.amount || 0), 0) ?? 0;
+    const totalExpenses = totalExpensesRaw + pgFees; // Total cost including PG feee
+    const netProfit = totalRevenue - totalExpenses;
+    const profitMargin = totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0;
+
+    // 5. Calculate Revenue by Package
+    const packageMap = new Map<number, { name: string; count: number; revenue: number }>();
+
+    // Initialize with all packages (even if 0 sales)
+    packages?.forEach(pkg => {
+        packageMap.set(pkg.id, { name: pkg.name, count: 0, revenue: 0 });
+    });
+
+    orders?.forEach(order => {
+        if (order.package_id && packageMap.has(order.package_id)) {
+            const entry = packageMap.get(order.package_id)!;
+            entry.count += 1;
+            entry.revenue += (order.amount || 0);
+        }
+    });
+
+    const revenueByPackage = Array.from(packageMap.entries()).map(([id, data]) => ({
+        packageId: id,
+        packageName: data.name,
+        count: data.count,
+        revenue: data.revenue
+    })).sort((a, b) => b.revenue - a.revenue);
+
+    const topSellingPackage = revenueByPackage.length > 0 ? {
+        name: revenueByPackage[0].packageName,
+        count: revenueByPackage[0].count,
+        revenue: revenueByPackage[0].revenue
+    } : null;
+
+    return {
+        eventId,
+        eventTitle: event.title,
+        summary: {
+            totalParticipants: uniqueParticipants,
+            totalRevenue,
+            netProfit,
+            totalExpenses,
+            profitMargin,
+        },
+        revenueByPackage,
+        topSellingPackage
+    };
+}
+

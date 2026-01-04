@@ -4,7 +4,7 @@
  */
 
 import { createClient } from "@/lib/supabase/server";
-import { getAllPipelineCards, getProfiles, getPackages, getEvents } from "@/features/pipeline/queries";
+import { getAllPipelineCards, getProfiles, getPackages, getEvents, getEditors } from "@/features/pipeline/queries";
 import { KanbanBoard } from "@/features/pipeline/components/KanbanBoard";
 
 import { PipelineHeader } from "./PipelineHeader";
@@ -13,11 +13,12 @@ export default async function PipelinePage() {
     const supabase = await createClient();
 
     // 데이터 병렬 로드
-    const [initialCards, users, packages, events] = await Promise.all([
+    const [initialCards, users, packages, events, editors] = await Promise.all([
         getAllPipelineCards(supabase),
         getProfiles(supabase),
         getPackages(supabase),
-        getEvents(supabase)
+        getEvents(supabase),
+        getEditors(supabase),
     ]);
 
     return (
@@ -34,6 +35,7 @@ export default async function PipelinePage() {
                     users={users}
                     packages={packages}
                     events={events}
+                    editors={editors}
                 />
             </main>
         </div>

@@ -16,7 +16,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
 
 import { StageColumn } from "./StageColumn";
 import { TaskCard } from "./TaskCard";
@@ -31,19 +31,24 @@ interface KanbanBoardProps {
     users: { id: string; name: string; email: string }[];
     packages: { id: number; name: string }[];
     events: { id: number; title: string }[];
+    editors: { id: string; name: string; email: string; commission_rate: number | null }[];
 }
 
-const STAGES: { id: PipelineStage; title: string }[] = [
-    { id: "WAITING", title: "Waiting" },
-    { id: "SHOOTING", title: "Shooting" },
-    { id: "EDITING", title: "Editing" },
-    { id: "READY", title: "Ready" },
-    { id: "DELIVERED", title: "Delivered" },
+const STAGES: { id: PipelineStage; title: string; color: string }[] = [
+    { id: "WAITING", title: "Waiting", color: "zinc" },
+    { id: "EDITING", title: "Editing", color: "purple" },
+    { id: "READY", title: "Ready", color: "orange" },
+    { id: "DELIVERED", title: "Delivered", color: "green" },
 ];
-export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoardProps) {
+
+
+
+export function KanbanBoard({ initialCards, users, packages, events, editors }: KanbanBoardProps) {
     const router = useRouter();
     const [cards, setCards] = useState<PipelineCardWithDetails[]>(initialCards);
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [activeDragStage, setActiveDragStage] = useState<PipelineStage | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     // 상세 모달 상태
     const [selectedCard, setSelectedCard] = useState<PipelineCardWithDetails | null>(null);
@@ -54,7 +59,13 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
     const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
     const [eventFilter, setEventFilter] = useState<string>("ALL");
 
-    // ... (useEffect for background check remains same)
+    // useEffect for background check or polling could go here
+    useEffect(() => {
+        const interval = setInterval(() => {
+            router.refresh();
+        }, 30000); // 30초마다 갱신
+        return () => clearInterval(interval);
+    }, [router]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -95,6 +106,9 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
         filteredCards.forEach((card) => {
             if (cols[card.stage]) {
                 cols[card.stage].push(card);
+            } else if (card.stage === ('SHOOTING' as any)) {
+                // Legacy support: Move SHOOTING to WAITING visually
+                if (cols['WAITING']) cols['WAITING'].push(card);
             }
         });
         return cols;
@@ -104,17 +118,6 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
     const activeCard = useMemo(() => {
         return cards.find((c) => c.id.toString() === activeId);
     }, [cards, activeId]);
-
-    // 담당자 목록 추출 (Unique) - 모달에도 전달하기 위해 활용
-    const assignees = useMemo(() => {
-        const unique = new Map();
-        initialCards.forEach((c) => {
-            if (c.worker_node) {
-                unique.set(c.assignee_id, c.worker_node.name);
-            }
-        });
-        return Array.from(unique.entries()).map(([id, name]) => ({ id, name }));
-    }, [initialCards]);
 
     // --- Event Handlers ---
 
@@ -131,10 +134,16 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
     // --- DND Handlers ---
 
     const handleDragStart = (event: DragStartEvent) => {
-        setActiveId(event.active.id.toString());
+        const id = event.active.id.toString();
+        setActiveId(id);
+        const card = cards.find((c) => c.id.toString() === id);
+        if (card) {
+            setActiveDragStage(card.stage);
+        }
     };
 
     const handleDragOver = (event: DragOverEvent) => {
+        // ... (Keep existing implementation)
         const { active, over } = event;
         if (!over) return;
 
@@ -161,7 +170,7 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
                     return arrayMove(newCards, activeIndex, overIndex);
                 }
 
-                // 같은 스테이지 내 순서 변경 (Priority 시스템이 있다면 여기서 처리)
+                // 같은 스테이지 내 순서 변경
                 return arrayMove(prev, activeIndex, overIndex);
             });
         }
@@ -185,6 +194,10 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
         const { active, over } = event;
         setActiveId(null);
 
+        // Reset drag stage later or now? cleanup needed.
+        const originalStage = activeDragStage;
+        setActiveDragStage(null);
+
         if (!over) return;
 
         const activeIdStr = active.id.toString();
@@ -204,24 +217,30 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
             if (overCard) newStage = overCard.stage;
         }
 
-        if (newStage && card.stage !== newStage) {
-            // Optimistic Update는 DragOver에서 이미 수행됨 (시각적으로)
-            // 실제 데이터 업데이트 요청
-            const previousStage = card.stage; // 백업용 (TODO: DragStart 시점의 스테이지를 저장해두는 것이 더 정확함)
+        // DEBUG: 로그 확인
+        console.log(`[DnD] End: ${card.id} (${originalStage} -> ${newStage})`);
+
+        if (newStage) {
+            // 같은 스테이지면 무시
+            if (originalStage === newStage) {
+                return;
+            }
 
             try {
-                // 바로 반영된 상태라고 가정하고 Server Action 호출
-                await updateCardStage(card.id, newStage);
+                // Server Action 호출
+                await updateCardStage(card.id, newStage as any);
                 toast.success(`Moved to ${newStage}`);
-                router.refresh(); // 데이터 최신화
+                router.refresh();
             } catch (error) {
                 console.error("Move failed:", error);
+                toast.error(`이동 실패: ${(error as Error).message}`);
 
                 // Rollback
-                toast.error(`이동 실패: ${(error as Error).message}`);
                 setCards((prev) =>
                     prev.map((c) =>
-                        c.id.toString() === activeIdStr ? { ...c, stage: previousStage as PipelineStage } : c
+                        c.id.toString() === activeIdStr && originalStage
+                            ? { ...c, stage: originalStage }
+                            : c
                     )
                 );
             }
@@ -254,7 +273,11 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
                 </div>
             )}
             {/* Toolbar: Heavy Metal Style */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 bg-[#0A0A0A] border-b border-zinc-800 shadow-md">
+            <div className={`
+                flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 
+                backdrop-blur-md border-b border-zinc-900 sticky top-0 z-40 transition-all duration-300
+                ${isFullscreen ? 'bg-zinc-950/95 pt-6' : 'bg-zinc-950/80'}
+            `}>
                 <KanbanFilters
                     filters={{ query: searchQuery, assigneeId: assigneeFilter, eventId: eventFilter }}
                     onFilterChange={(updates) => {
@@ -263,12 +286,34 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
                         if (updates.eventId !== undefined) setEventFilter(updates.eventId);
                     }}
                     events={events}
-                    assignees={assignees}
+                    assignees={editors}
                 />
+
+                <button
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                    title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                >
+                    {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                </button>
             </div>
 
             {/* Board Area */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar">
+            <div className={`
+                flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar transition-all duration-300
+                ${isFullscreen ? 'fixed inset-0 z-50 bg-[#09090b] pt-[80px]' : ''}
+            `}>
+                {isFullscreen && (
+                    <div className="absolute top-4 right-6 z-50">
+                        <button
+                            onClick={() => setIsFullscreen(false)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-900/20 border border-red-900/50 text-red-400 hover:bg-red-900/30 transition-colors"
+                        >
+                            <Minimize2 className="w-4 h-4" />
+                            <span className="text-sm font-bold">EXIT MODE</span>
+                        </button>
+                    </div>
+                )}
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCorners}
@@ -276,12 +321,13 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
                     onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
                 >
-                    <div className="flex h-full gap-5 pb-6 min-w-max">
+                    <div className="flex h-full gap-4 px-4 pb-6 w-full">
                         {STAGES.map((stage) => (
                             <StageColumn
                                 key={stage.id}
                                 stage={stage.id}
                                 title={stage.title}
+                                color={stage.color}
                                 cards={columns[stage.id]}
                                 onCardClick={handleCardClick}
                             />
@@ -299,7 +345,7 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
                 card={selectedCard}
-                availableWorkers={assignees}
+                availableWorkers={editors}
             />
         </div>
     );

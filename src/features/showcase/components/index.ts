@@ -5,3 +5,4 @@
 
 export { PackageCard } from "./PackageCard";
 export { ComparisonPlayer } from "./ComparisonPlayer";
+export { ShowcaseAdminBoard } from "./ShowcaseAdminBoard";

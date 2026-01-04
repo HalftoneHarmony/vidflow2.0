@@ -2,9 +2,10 @@
 import { Database } from "@/lib/supabase/database.types";
 import { SupabaseClient } from "@supabase/supabase-js";
 
-export type PipelineStage = Database["public"]["Tables"]["pipeline_cards"]["Row"]["stage"];
+export type PipelineStage = "WAITING" | "EDITING" | "READY" | "DELIVERED";
 
-export type PipelineCardWithDetails = Database["public"]["Tables"]["pipeline_cards"]["Row"] & {
+export type PipelineCardWithDetails = Omit<Database["public"]["Tables"]["pipeline_cards"]["Row"], "stage"> & {
+    stage: PipelineStage;
     order_node: Database["public"]["Tables"]["orders"]["Row"] & {
         user_node: { name: string; email: string };
         package_node: { name: string };
@@ -74,6 +75,20 @@ export async function getProfiles(supabase: SupabaseClient<Database>) {
         .from("profiles")
         .select("id, name, email")
         .eq("role", "PARTICIPANT")
+        .order("name");
+
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * 작업자(에디터) 목록 조회 (Task 할당용)
+ */
+export async function getEditors(supabase: SupabaseClient<Database>) {
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name, email, commission_rate")
+        .in("role", ["EDITOR", "ADMIN"])
         .order("name");
 
     if (error) throw error;

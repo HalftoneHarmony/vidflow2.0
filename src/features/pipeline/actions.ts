@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export type PipelineStage = "WAITING" | "SHOOTING" | "EDITING" | "READY" | "DELIVERED";
+export type PipelineStage = "WAITING" | "EDITING" | "READY" | "DELIVERED";
 
 /**
  * 카드의 스테이지를 변경합니다.
@@ -12,6 +12,12 @@ export type PipelineStage = "WAITING" | "SHOOTING" | "EDITING" | "READY" | "DELI
  */
 export async function updateCardStage(cardId: number, newStage: PipelineStage) {
     const supabase = await createClient();
+
+    // 🔐 권한 체크: 로그인한 사용자만 변경 가능
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+        throw new Error("Unauthorized: 로그인 후 이용해주세요.");
+    }
 
     // 🛡️ Sentinel's Stage Gate: DELIVERED 전환 전 링크 검증
     if (newStage === "DELIVERED") {
@@ -30,7 +36,7 @@ export async function updateCardStage(cardId: number, newStage: PipelineStage) {
         }
     }
 
-    // 🔄 상태 업데이트 및 stage_entered_at 갱신 (병목 감지 기준점)
+    // 🔄 상태 업데이트 및 stage_entered_at 갱신
     const { error } = await supabase
         .from("pipeline_cards")
         .update({
@@ -62,7 +68,8 @@ export async function updateCardStage(cardId: number, newStage: PipelineStage) {
     }
 
     revalidatePath("/admin/pipeline");
-    revalidatePath("/dashboard/finance");
+    revalidatePath("/admin/finance");
+    revalidatePath("/admin/dashboard");
 }
 
 /**
@@ -71,6 +78,13 @@ export async function updateCardStage(cardId: number, newStage: PipelineStage) {
 export async function assignWorker(cardId: number, workerId: string | null) {
     const supabase = await createClient();
 
+    // 🔐 권한 체크
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+        throw new Error("Unauthorized");
+    }
+
+    // 🔄 상태 업데이트
     const { error } = await supabase
         .from("pipeline_cards")
         .update({
@@ -121,7 +135,7 @@ export async function createGhostCard(data: {
         .from("pipeline_cards")
         .insert({
             order_id: order.id,
-            stage: "SHOOTING", // 현장 등록은 보통 바로 대기/촬영 단계
+            stage: "WAITING", // 현장 등록은 대기 단계로 진입 (SHOOTING 삭제됨)
             stage_entered_at: new Date().toISOString(),
         })
         .select()

@@ -16,6 +16,12 @@ export type Product = {
         title: string;
         event_date: string;
     };
+    showcase_items?: {
+        id: number;
+        type: "VIDEO" | "IMAGE";
+        media_url: string;
+        is_best_cut: boolean;
+    }[];
 };
 
 /**
@@ -31,6 +37,12 @@ export async function getAllPackages(): Promise<Product[]> {
             events (
                 title,
                 event_date
+            ),
+            showcase_items (
+                id,
+                type,
+                media_url,
+                is_best_cut
             )
         `)
         .order("id", { ascending: false });
@@ -40,6 +52,7 @@ export async function getAllPackages(): Promise<Product[]> {
         throw new Error(error.message);
     }
 
+    // @ts-ignore: Supabase types complexity handling
     return data || [];
 }
 

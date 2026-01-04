@@ -7,6 +7,8 @@
 import { getAllEventsProfitSummary } from "@/features/finance/queries";
 import { EventProfitTable } from "@/features/finance/components/EventProfitTable";
 import { ExpenseDetailSection } from "@/features/finance/components/ExpenseDetailSection";
+import { EventProfitChart, CostBreakdownChart } from "@/features/finance/components/FinanceCharts";
+import { FinanceDashboard } from "@/features/finance/components/FinanceDashboard";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +64,20 @@ export default async function FinancePage() {
         ? Math.round((totalStats.netProfit / totalStats.totalRevenue) * 100)
         : 0;
 
+    // 차트용 데이터 가공
+    const profitChartData = events.map(e => ({
+        name: e.title,
+        revenue: e.profit.totalRevenue,
+        profit: e.profit.netProfit,
+        expense: e.profit.pgFees + e.profit.fixedExpenses + e.profit.laborCosts
+    }));
+
+    const costBreakdownData = [
+        { name: "Labor Costs", value: totalStats.laborCosts, color: "#3b82f6" }, // Blue
+        { name: "Fixed Expenses", value: totalStats.fixedExpenses, color: "#ef4444" }, // Red
+        { name: "PG Fees", value: totalStats.pgFees, color: "#a1a1aa" }, // Zinc
+    ].filter(d => d.value > 0);
+
     // 2. 이벤트 목록 조회 (드롭다운용)
     const supabase = await createClient();
     const { data: eventList } = await supabase
@@ -93,54 +109,66 @@ export default async function FinancePage() {
         }).format(value);
 
     return (
-        <div className="space-y-8 pb-10">
-            {/* Header */}
-            <div className="border-b border-zinc-800 pb-6">
-                <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
-                    Finance Center
-                </h1>
-                <p className="text-zinc-500 font-mono text-sm mt-1">
-                    Revenue Analytics & Expense Management
-                </p>
-            </div>
+        <FinanceDashboard eventList={eventList || []}>
+            <div className="space-y-8 pb-10">
+                {/* Header */}
+                <div className="border-b border-zinc-800 pb-6">
+                    <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
+                        Finance Center
+                    </h1>
+                    <p className="text-zinc-500 font-mono text-sm mt-1">
+                        Revenue Analytics & Expense Management
+                    </p>
+                </div>
 
-            {/* Step 2: 요약 통계 카드 영역 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    label="Total Revenue"
-                    value={formatCurrency(totalStats.totalRevenue)}
-                    type="revenue"
-                />
-                <StatCard
-                    label="Total Expenses"
-                    value={formatCurrency(totalExpenses)}
-                    type="expense"
-                />
-                <StatCard
-                    label="Net Profit"
-                    value={formatCurrency(totalStats.netProfit)}
-                    type={totalStats.netProfit >= 0 ? "profit" : "expense"}
-                />
-                <StatCard
-                    label="Profit Margin"
-                    value={`${profitMargin}%`}
-                    type="rate"
+                {/* Step 2: 요약 통계 카드 영역 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCard
+                        label="Total Revenue"
+                        value={formatCurrency(totalStats.totalRevenue)}
+                        type="revenue"
+                    />
+                    <StatCard
+                        label="Total Expenses"
+                        value={formatCurrency(totalExpenses)}
+                        type="expense"
+                    />
+                    <StatCard
+                        label="Net Profit"
+                        value={formatCurrency(totalStats.netProfit)}
+                        type={totalStats.netProfit >= 0 ? "profit" : "expense"}
+                    />
+                    <StatCard
+                        label="Profit Margin"
+                        value={`${profitMargin}%`}
+                        type="rate"
+                    />
+                </div>
+
+                {/* New: Visual Analytics Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[400px]">
+                    <div className="lg:col-span-2 h-full">
+                        <EventProfitChart data={profitChartData} />
+                    </div>
+                    <div className="lg:col-span-1 h-full">
+                        <CostBreakdownChart data={costBreakdownData} />
+                    </div>
+                </div>
+
+                {/* Step 3: 이벤트별 수익 분석 테이블 */}
+                <div className="bg-zinc-900 border border-zinc-800 p-6">
+                    <h2 className="text-lg font-bold text-white border-l-4 border-yellow-500 pl-3 mb-6">
+                        Event Profitability Analysis
+                    </h2>
+                    <EventProfitTable events={events} />
+                </div>
+
+                {/* Step 4 & 5 & 6: 지출 내역 상세 섹션 */}
+                <ExpenseDetailSection
+                    expenses={allExpenses || []}
+                    eventList={eventList || []}
                 />
             </div>
-
-            {/* Step 3: 이벤트별 수익 분석 테이블 */}
-            <div className="bg-zinc-900 border border-zinc-800 p-6">
-                <h2 className="text-lg font-bold text-white border-l-4 border-yellow-500 pl-3 mb-6">
-                    Event Profitability Analysis
-                </h2>
-                <EventProfitTable events={events} />
-            </div>
-
-            {/* Step 4 & 5 & 6: 지출 내역 상세 섹션 */}
-            <ExpenseDetailSection
-                expenses={allExpenses || []}
-                eventList={eventList || []}
-            />
-        </div>
+        </FinanceDashboard>
     );
 }

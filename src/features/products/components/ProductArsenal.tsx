@@ -5,6 +5,7 @@ import { Product } from "../queries";
 import { PackageCard } from "./PackageCard";
 import { CreatePackageModal } from "./CreatePackageModal";
 import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type ProductArsenalProps = {
     packages: Product[];
@@ -14,11 +15,17 @@ type ProductArsenalProps = {
 export function ProductArsenal({ packages, events }: ProductArsenalProps) {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
-    const filteredPackages = packages.filter(pkg =>
-        pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pkg.events?.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredPackages = packages.filter(pkg => {
+        const term = searchTerm.toLowerCase();
+        const matchesSearch = pkg.name.toLowerCase().includes(term) ||
+            (pkg.events?.title?.toLowerCase().includes(term) ?? false);
+
+        const matchesEvent = selectedEventId === null || pkg.event_id === selectedEventId;
+
+        return matchesSearch && matchesEvent;
+    });
 
     return (
         <div className="space-y-8">
@@ -45,15 +52,48 @@ export function ProductArsenal({ packages, events }: ProductArsenalProps) {
                 </div>
             </div>
 
+            {/* Event Filter Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+                <button
+                    onClick={() => setSelectedEventId(null)}
+                    className={cn(
+                        "px-4 py-1.5 rounded-full text-sm font-medium border transition-colors whitespace-nowrap",
+                        selectedEventId === null
+                            ? "bg-white text-black border-white"
+                            : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-white"
+                    )}
+                >
+                    ALL PRODUCTS
+                </button>
+                {events.map(event => (
+                    <button
+                        key={event.id}
+                        onClick={() => setSelectedEventId(event.id)}
+                        className={cn(
+                            "px-4 py-1.5 rounded-full text-sm font-medium border transition-colors whitespace-nowrap",
+                            selectedEventId === event.id
+                                ? "bg-white text-black border-white"
+                                : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-white"
+                        )}
+                    >
+                        {event.title}
+                    </button>
+                ))}
+            </div>
+
             {filteredPackages.length === 0 ? (
                 <div className="text-center py-20 border border-dashed border-zinc-800 rounded-xl">
                     <div className="text-6xl mb-4 opacity-20">📦</div>
-                    <p className="text-zinc-500 mb-6">등록된 패키지가 없습니다.</p>
+                    <p className="text-zinc-500 mb-6">
+                        {searchTerm || selectedEventId
+                            ? "조건에 맞는 패키지가 없습니다."
+                            : "등록된 패키지가 없습니다."}
+                    </p>
                     <button
                         onClick={() => setShowCreateModal(true)}
                         className="text-red-500 font-bold hover:underline"
                     >
-                        첫 번째 패키지를 생성하세요
+                        {searchTerm || selectedEventId ? "필터를 해제하거나 검색어를 변경하세요" : "첫 번째 패키지를 생성하세요"}
                     </button>
                 </div>
             ) : (

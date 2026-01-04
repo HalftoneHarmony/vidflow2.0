@@ -15,7 +15,9 @@ import { Button } from "@/components/ui/button";
 // Navigation Items
 const navItems = [
     { href: "/showcase", label: "Showcase", highlight: true },
+    { href: "/about", label: "About" },
     { href: "/events", label: "Events" },
+    { href: "/support", label: "Support" },
     // My Page는 로그인 여부에 따라 다르므로 여기서 제거하거나 조건부 렌더링
 ];
 
@@ -216,9 +218,9 @@ export default async function PublicLayout({
                                 Support
                             </h4>
                             <ul className="space-y-2">
-                                <li><a href="#" className="text-zinc-500 hover:text-white text-sm transition-colors">FAQ</a></li>
-                                <li><a href="#" className="text-zinc-500 hover:text-white text-sm transition-colors">Privacy</a></li>
-                                <li><a href="#" className="text-zinc-500 hover:text-white text-sm transition-colors">Terms</a></li>
+                                <li><Link href="/support" className="text-zinc-500 hover:text-white text-sm transition-colors">FAQ</Link></li>
+                                <li><Link href="/support" className="text-zinc-500 hover:text-white text-sm transition-colors">Privacy</Link></li>
+                                <li><Link href="/support" className="text-zinc-500 hover:text-white text-sm transition-colors">Terms</Link></li>
                             </ul>
                         </div>
                     </div>

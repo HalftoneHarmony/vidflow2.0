@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updatePackage } from "../actions";
+import { upsertShowcaseVideo } from "@/features/showcase/actions";
 import { Product } from "../queries";
 import { X } from "lucide-react";
 
@@ -20,22 +21,28 @@ export function EditPackageModal({ pkg, eventsList, onClose }: EditPackageModalP
         price: pkg.price,
         description: pkg.description || "",
         composition: pkg.composition || [],
-        event_id: pkg.event_id, // 단일 수정 시 이벤트 변경 가능성 열어둘지 고민 (여기선 표시만 함)
+        event_id: pkg.event_id,
     });
+
+    const [videoUrl, setVideoUrl] = useState(
+        pkg.showcase_items?.find(item => item.type === "VIDEO")?.media_url || ""
+    );
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
 
         try {
-            const result = await updatePackage(pkg.id, {
-                ...formData,
-            });
+            // Package Update & Video Upsert
+            const [updateResult, videoResult] = await Promise.all([
+                updatePackage(pkg.id, formData),
+                upsertShowcaseVideo(pkg.id, videoUrl)
+            ]);
 
-            if (result.success) {
+            if (updateResult.success && videoResult.success) {
                 onClose();
             } else {
-                alert(`수정 실패: ${result.error}`);
+                alert(`수정 실패: ${updateResult.error || videoResult.error}`);
             }
         } catch (error) {
             alert("알 수 없는 오류가 발생했습니다.");
@@ -133,6 +140,18 @@ export function EditPackageModal({ pkg, eventsList, onClose }: EditPackageModalP
                             value={formData.description}
                             onChange={e => setFormData({ ...formData, description: e.target.value })}
                             className="w-full bg-zinc-950 border border-zinc-800 rounded p-3 text-white focus:border-red-500 focus:outline-none resize-none"
+                        />
+                    </div>
+
+                    {/* Showcase Video URL */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-zinc-500 uppercase">Showcase Video URL (YouTube/Vimeo/S3)</label>
+                        <input
+                            type="text"
+                            value={videoUrl}
+                            onChange={e => setVideoUrl(e.target.value)}
+                            placeholder="https://..."
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded p-3 text-white focus:border-red-500 focus:outline-none"
                         />
                     </div>
 

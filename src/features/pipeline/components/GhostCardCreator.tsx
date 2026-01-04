@@ -11,6 +11,13 @@ import {
     SheetTrigger,
     SheetFooter
 } from "@/components/ui/sheet";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { createGhostCard, createGhostCardWithNewUser } from "../actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -79,7 +86,7 @@ export function GhostCardCreator({ users, packages, events, isOpen, onOpenChange
                 });
             }
 
-            toast.success("Ghost Card가 생성되었습니다. SHOOTING 단계로 진입합니다.");
+            toast.success("Ghost Card가 생성되었습니다. WAITING 단계로 진입합니다.");
             onOpenChange(false);
             setForm({
                 userId: "", packageId: "", eventId: "",
@@ -111,31 +118,39 @@ export function GhostCardCreator({ users, packages, events, isOpen, onOpenChange
                     <div className="space-y-4 p-4 bg-zinc-900/50 border border-zinc-800 rounded">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Select Event</label>
-                            <select
-                                className="w-full bg-zinc-950 border border-zinc-800 h-10 px-3 text-xs font-mono uppercase focus:border-red-600 focus:ring-1 focus:ring-red-600/30 transition-all outline-none"
+                            <Select
                                 value={form.eventId}
-                                onChange={(e) => setForm({ ...form, eventId: e.target.value })}
-                                required
+                                onValueChange={(val) => setForm({ ...form, eventId: val })}
                             >
-                                <option value="">-- Choose Event --</option>
-                                {events.map(e => (
-                                    <option key={e.id} value={e.id}>{e.title}</option>
-                                ))}
-                            </select>
+                                <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-red-600 font-mono uppercase text-xs h-10">
+                                    <SelectValue placeholder="-- CHOOSE EVENT --" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                                    {events.map(e => (
+                                        <SelectItem key={e.id} value={String(e.id)} className="focus:bg-zinc-800 focus:text-white font-mono text-xs">
+                                            {e.title}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Select Package</label>
-                            <select
-                                className="w-full bg-zinc-950 border border-zinc-800 h-10 px-3 text-xs font-mono uppercase focus:border-red-600 focus:ring-1 focus:ring-red-600/30 transition-all outline-none"
+                            <Select
                                 value={form.packageId}
-                                onChange={(e) => setForm({ ...form, packageId: e.target.value })}
-                                required
+                                onValueChange={(val) => setForm({ ...form, packageId: val })}
                             >
-                                <option value="">-- Select Service Level --</option>
-                                {packages.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
+                                <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-red-600 font-mono uppercase text-xs h-10">
+                                    <SelectValue placeholder="-- SELECT SERVICE LEVEL --" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                                    {packages.map(p => (
+                                        <SelectItem key={p.id} value={String(p.id)} className="focus:bg-zinc-800 focus:text-white font-mono text-xs">
+                                            {p.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
@@ -162,19 +177,34 @@ export function GhostCardCreator({ users, packages, events, isOpen, onOpenChange
                     {mode === "EXISTING" ? (
                         <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Select Operative</label>
-                            <select
-                                className="w-full bg-zinc-950 border border-zinc-800 h-10 px-3 text-xs font-mono uppercase focus:border-red-600 focus:ring-1 focus:ring-red-600/30 transition-all outline-none"
-                                value={form.userId}
-                                onChange={(e) => setForm({ ...form, userId: e.target.value })}
-                            >
-                                <option value="">-- Select Registered Player --</option>
-                                {users.map(u => (
-                                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                                ))}
-                            </select>
+                            {users.length === 0 ? (
+                                <div className="p-4 bg-zinc-900 border border-dashed border-zinc-700 text-center">
+                                    <p className="text-xs text-zinc-500">등록된 참가자(PARTICIPANT)가 없습니다.</p>
+                                    <p className="text-[10px] text-zinc-600 mt-1">"Register New" 탭에서 신규 등록하세요.</p>
+                                </div>
+                            ) : (
+                                <Select
+                                    value={form.userId}
+                                    onValueChange={(val) => setForm({ ...form, userId: val })}
+                                >
+                                    <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-red-600 font-mono uppercase text-xs h-10">
+                                        <SelectValue placeholder="-- SELECT REGISTERED PLAYER --" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                                        {users.map(u => (
+                                            <SelectItem key={u.id} value={u.id} className="focus:bg-zinc-800 focus:text-white font-mono text-xs">
+                                                {u.name} <span className="text-zinc-500 ml-2">({u.email})</span>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 bg-red-950/10 p-4 border border-red-900/20 rounded">
+                            <div className="bg-amber-900/20 border border-amber-900/30 p-2 text-[10px] text-amber-500/80">
+                                ⚠️ 신규 등록은 <code className="bg-black/30 px-1">SUPABASE_SERVICE_ROLE_KEY</code> 설정이 필요합니다.
+                            </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-red-500/80 uppercase tracking-widest">Full Name</label>
                                 <input

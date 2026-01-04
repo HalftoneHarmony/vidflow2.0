@@ -31,9 +31,9 @@ export function EventProfitTable({ events }: EventProfitTableProps) {
 
     // 수익률에 따른 색상 반환
     const getMarginColor = (margin: number) => {
-        if (margin >= 30) return "text-emerald-400 bg-emerald-900/30";
-        if (margin >= 10) return "text-yellow-400 bg-yellow-900/30";
-        return "text-red-400 bg-red-900/30";
+        if (margin > 50) return "text-emerald-400 bg-emerald-900/30";
+        if (margin < 20) return "text-red-400 bg-red-900/30";
+        return "text-yellow-400 bg-yellow-900/30";
     };
 
     const toggleExpand = (id: number) => {

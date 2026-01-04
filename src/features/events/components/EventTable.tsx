@@ -1,18 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatDate } from "@/shared/utils/formatters";
 import { AdminEvent } from "../queries";
-import { toggleEventActive } from "../actions";
+import { toggleEventActive, deleteEvent } from "../actions";
 import { toast } from "sonner";
-import { useState } from "react";
-import { Calendar, MapPin, Package } from "lucide-react";
+import { Calendar, MapPin, Package, Edit3, Trash2 } from "lucide-react";
+import { EventFormModal } from "./EventFormModal";
 
 /**
  * 📅 Event Table Component
- * 이벤트 목록 및 활성화 관리
+ * 이벤트 목록, 활성화 관리, 수정/삭제
+ * 
+ * @author Vulcan (The Forge Master)
  */
 
 interface EventTableProps {
@@ -22,6 +27,11 @@ interface EventTableProps {
 export function EventTable({ events }: EventTableProps) {
     const [loadingId, setLoadingId] = useState<number | null>(null);
 
+    // Modal States
+    const [editingEvent, setEditingEvent] = useState<AdminEvent | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+
+    // Toggle Active Status
     const handleToggle = async (eventId: number, currentState: boolean) => {
         try {
             setLoadingId(eventId);
@@ -32,6 +42,20 @@ export function EventTable({ events }: EventTableProps) {
             console.error(error);
         } finally {
             setLoadingId(null);
+        }
+    };
+
+    // Delete Event
+    const handleDelete = async () => {
+        if (!deletingId) return;
+        try {
+            await deleteEvent(deletingId);
+            toast.success("이벤트가 삭제되었습니다.");
+        } catch (error) {
+            toast.error("이벤트 삭제 실패");
+            console.error(error);
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -83,14 +107,52 @@ export function EventTable({ events }: EventTableProps) {
             ),
         },
         {
-            header: "Created",
+            header: "Actions",
             cell: (event) => (
-                <span className="text-zinc-600 text-xs font-mono">
-                    {new Date(event.created_at).toLocaleDateString()}
-                </span>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingEvent(event)}
+                        className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    >
+                        <Edit3 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeletingId(event.id)}
+                        className="h-8 w-8 text-zinc-400 hover:text-red-500 hover:bg-red-900/20"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                </div>
             ),
         },
     ];
 
-    return <DataTable columns={columns} data={events} />;
+    return (
+        <>
+            <DataTable columns={columns} data={events} />
+
+            {/* Edit Modal */}
+            {editingEvent && (
+                <EventFormModal
+                    isOpen={!!editingEvent}
+                    onClose={() => setEditingEvent(null)}
+                    event={editingEvent}
+                />
+            )}
+
+            {/* Delete Confirmation */}
+            <ConfirmDialog
+                open={!!deletingId}
+                onOpenChange={(open) => !open && setDeletingId(null)}
+                onConfirm={handleDelete}
+                title="Events 삭제"
+                description="이 대회를 정말 삭제하시겠습니까? 연결된 모든 패키지와 주문 데이터에 영향을 줄 수 있습니다."
+                variant="destructive"
+            />
+        </>
+    );
 }
