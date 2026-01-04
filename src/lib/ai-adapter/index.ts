@@ -16,7 +16,7 @@ export interface AIAdapter {
 // TODO: 실제 AI 클라이언트 구현
 export class MockAIAdapter implements AIAdapter {
     async chat(messages: AIMessage[]): Promise<string> {
-        console.log("AI Chat:", messages);
+
         return "This is a mock AI response.";
     }
 }

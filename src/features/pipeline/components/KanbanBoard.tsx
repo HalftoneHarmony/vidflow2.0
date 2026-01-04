@@ -218,7 +218,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
         }
 
         // DEBUG: 로그 확인
-        console.log(`[DnD] End: ${card.id} (${originalStage} -> ${newStage})`);
+
 
         if (newStage) {
             // 같은 스테이지면 무시
