@@ -1,73 +1,107 @@
 
-import { createClient } from "@/lib/supabase/client";
 import { Database } from "@/lib/supabase/database.types";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 export type PipelineStage = Database["public"]["Tables"]["pipeline_cards"]["Row"]["stage"];
 
 export type PipelineCardWithDetails = Database["public"]["Tables"]["pipeline_cards"]["Row"] & {
-    order: Database["public"]["Tables"]["orders"]["Row"] & {
-        user: { name: string; email: string };
-        package: { name: string };
+    order_node: Database["public"]["Tables"]["orders"]["Row"] & {
+        user_node: { name: string; email: string };
+        package_node: { name: string };
     };
-    assignee: { name: string; email: string } | null;
+    worker_node: { name: string; email: string; commission_rate: number } | null;
     deliverables: Database["public"]["Tables"]["deliverables"]["Row"][];
 };
 
 /**
- * 특정 이벤트의 파이프라인 카드 전체 목록 조회
+ * 모든 파이프라인 카드 목록 조회 (서버/클라이언트 모두 대응 가능하도록 supabase instance를 받음)
  */
-export async function getPipelineCards(eventId: number): Promise<PipelineCardWithDetails[]> {
-    const supabase = createClient();
-
+export async function getAllPipelineCards(supabase: SupabaseClient<Database>): Promise<PipelineCardWithDetails[]> {
     const { data, error } = await supabase
         .from("pipeline_cards")
         .select(`
             *,
-            order:orders!inner (
+            order_node:orders!inner (
                 *,
-                user:profiles!inner (name, email),
-                package:packages!inner (name)
+                user_node:profiles!inner (name, email),
+                package_node:packages!inner (name)
             ),
-            assignee:profiles (name, email),
+            worker_node:profiles (name, email, commission_rate),
             deliverables (*)
         `)
-        .eq("order.event_id", eventId)
-        .order("usage", { foreignTable: "order", ascending: false }); // order by logic needs check, but sorting by ID or Date is safer usually
+        .order("id", { ascending: false });
 
     if (error) {
         console.error("Error fetching pipeline cards:", error);
         throw error;
     }
 
-    // Supabase의 조인 결과 타입을 맞추기 위해 캐스팅이 필요할 수 있습니다.
-    // 여기서는 런타임 데이터 구조가 맞다고 가정하고 반환합니다.
     return data as any as PipelineCardWithDetails[];
 }
 
 /**
- * 특정 스테이지의 카드 목록 조회 (이벤트 무관)
+ * 특정 이벤트의 파이프라인 카드 목록 조회
  */
-export async function getCardsByStage(stage: PipelineStage): Promise<PipelineCardWithDetails[]> {
-    const supabase = createClient();
-
+export async function getPipelineCardsByEvent(supabase: SupabaseClient<Database>, eventId: number): Promise<PipelineCardWithDetails[]> {
     const { data, error } = await supabase
         .from("pipeline_cards")
         .select(`
             *,
-            order:orders!inner (
+            order_node:orders!inner (
                 *,
-                user:profiles!inner (name, email),
-                package:packages!inner (name)
+                user_node:profiles!inner (name, email),
+                package_node:packages!inner (name)
             ),
-            assignee:profiles (name, email),
+            worker_node:profiles (name, email, commission_rate),
             deliverables (*)
         `)
-        .eq("stage", stage);
+        .eq("order_node.event_id", eventId)
+        .order("id", { ascending: false });
 
     if (error) {
-        console.error(`Error fetching cards for stage ${stage}:`, error);
+        console.error("Error fetching event pipeline cards:", error);
         throw error;
     }
 
     return data as any as PipelineCardWithDetails[];
+}
+
+/**
+ * 활성 사용자(선수) 목록 조회 (Ghost Card용)
+ */
+export async function getProfiles(supabase: SupabaseClient<Database>) {
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .eq("role", "PARTICIPANT")
+        .order("name");
+
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * 활성 패키지 목록 조회 (Ghost Card용)
+ */
+export async function getPackages(supabase: SupabaseClient<Database>) {
+    const { data, error } = await supabase
+        .from("packages")
+        .select("id, name, price")
+        .order("name");
+
+    if (error) throw error;
+    return data;
+}
+
+/**
+ * 활성 이벤트 목록 조회 (Ghost Card용)
+ */
+export async function getEvents(supabase: SupabaseClient<Database>) {
+    const { data, error } = await supabase
+        .from("events")
+        .select("id, title")
+        .order("event_date", { ascending: false });
+
+    if (error) throw error;
+    return data;
 }

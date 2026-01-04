@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { AlertTriangle, User, Package } from "lucide-react";
 import { PipelineCardWithDetails } from "../queries";
 
 interface TaskCardProps {
@@ -71,7 +72,8 @@ export function TaskCard({ card, onClick, isOverlay }: TaskCardProps) {
                     #{card.order_id}
                 </span>
                 {isBottleneck && (
-                    <span className="text-[10px] font-bold text-red-500 bg-red-950/50 px-2 py-0.5 animate-pulse border border-red-500/40 uppercase tracking-widest">
+                    <span className="text-[10px] font-bold text-red-500 bg-red-950/50 px-2 py-0.5 animate-pulse border border-red-500/40 uppercase tracking-widest flex items-center gap-1">
+                        <AlertTriangle className="h-2.5 w-2.5" />
                         STUCK
                     </span>
                 )}
@@ -79,10 +81,10 @@ export function TaskCard({ card, onClick, isOverlay }: TaskCardProps) {
 
             {/* Body: Package & Customer */}
             <h4 className="font-bold text-sm text-zinc-100 mb-1 truncate font-[family-name:var(--font-oswald)] uppercase tracking-wide">
-                {card.order?.package?.name || "Unknown Package"}
+                {card.order_node?.package_node?.name || "Unknown Package"}
             </h4>
             <p className="text-xs text-zinc-400 mb-3 flex items-center gap-1">
-                <span>{card.order?.user?.name || "Unknown User"}</span>
+                <span>{card.order_node?.user_node?.name || "Unknown User"}</span>
             </p>
 
             {/* Footer: Worker & Status */}
@@ -91,22 +93,32 @@ export function TaskCard({ card, onClick, isOverlay }: TaskCardProps) {
                     <div
                         className={`
                             w-6 h-6 flex items-center justify-center text-[10px] font-bold overflow-hidden border
-                            ${card.assignee ? 'bg-red-900/30 text-red-500 border-red-500/30' : 'bg-zinc-800 text-zinc-500 border-zinc-700'}
+                            ${card.worker_node ? 'bg-red-900/30 text-red-500 border-red-500/30' : 'bg-zinc-800 text-zinc-500 border-zinc-700'}
                         `}
                     >
-                        {card.assignee?.name ? card.assignee.name.charAt(0) : "?"}
+                        {card.worker_node?.name ? card.worker_node.name.charAt(0) : "?"}
                     </div>
                     <span className="text-xs text-zinc-500 truncate max-w-[80px]">
-                        {card.assignee?.name || "Unassigned"}
+                        {card.worker_node?.name || "Unassigned"}
                     </span>
                 </div>
 
-                {/* Deliverables Count Badge (Optional) */}
-                {card.deliverables && card.deliverables.length > 0 && (
-                    <div className="flex items-center gap-1 text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.5 border border-zinc-700">
-                        <span>📦 {card.deliverables.length}</span>
-                    </div>
-                )}
+                {/* Deliverables Count & Receipt Status */}
+                <div className="flex items-center gap-2">
+                    {card.stage === "DELIVERED" && (
+                        <div className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 border ${card.deliverables?.some(d => d.is_downloaded)
+                            ? "bg-green-950/50 text-green-500 border-green-500/30"
+                            : "bg-zinc-900 text-zinc-500 border-zinc-800"
+                            }`}>
+                            <span>{card.deliverables?.some(d => d.is_downloaded) ? "RECEIVED" : "SENT"}</span>
+                        </div>
+                    )}
+                    {card.deliverables && card.deliverables.length > 0 && (
+                        <div className="flex items-center gap-1 text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.5 border border-zinc-700">
+                            <span>📦 {card.deliverables.length}</span>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

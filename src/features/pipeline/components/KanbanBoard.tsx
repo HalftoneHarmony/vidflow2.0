@@ -13,19 +13,25 @@ import {
     useSensors,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Search, Filter } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
-import { toast } from "sonner"; // 가정: sonner가 설치되어 있음 (package.json 확인됨)
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 
 import { StageColumn } from "./StageColumn";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailModal } from "./TaskDetailModal";
+import { GhostCardCreator } from "./GhostCardCreator";
 import { PipelineStage, PipelineCardWithDetails } from "../queries";
 import { updateCardStage } from "../actions";
+import { verifyLink } from "@/features/delivery/actions";
+import { KanbanFilters, PipelineFiltersState } from "./KanbanFilters";
 
 interface KanbanBoardProps {
     initialCards: PipelineCardWithDetails[];
+    users: { id: string; name: string; email: string }[];
+    packages: { id: number; name: string }[];
+    events: { id: number; title: string }[];
 }
 
 const STAGES: { id: PipelineStage; title: string }[] = [
@@ -35,8 +41,7 @@ const STAGES: { id: PipelineStage; title: string }[] = [
     { id: "READY", title: "Ready" },
     { id: "DELIVERED", title: "Delivered" },
 ];
-
-export function KanbanBoard({ initialCards }: KanbanBoardProps) {
+export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoardProps) {
     const router = useRouter();
     const [cards, setCards] = useState<PipelineCardWithDetails[]>(initialCards);
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -48,11 +53,9 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
     // 필터 상태
     const [searchQuery, setSearchQuery] = useState("");
     const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
+    const [eventFilter, setEventFilter] = useState<string>("ALL");
 
-    // 초기 데이터 동기화 (Server Action revalidatePath 대응)
-    useEffect(() => {
-        setCards(initialCards);
-    }, [initialCards]);
+    // ... (useEffect for background check remains same)
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -67,16 +70,21 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
     const filteredCards = useMemo(() => {
         return cards.filter((card) => {
             const matchesSearch =
-                card.order?.user?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                card.order?.package?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                card.order_node?.user_node?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                card.order_node?.package_node?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                card.order_id.toString().includes(searchQuery) ||
                 false;
 
             const matchesAssignee =
-                assigneeFilter === "ALL" || card.assignee_id === assigneeFilter;
+                assigneeFilter === "ALL" ||
+                (assigneeFilter === "unassigned" ? !card.assignee_id : card.assignee_id === assigneeFilter);
 
-            return matchesSearch && matchesAssignee;
+            const matchesEvent =
+                eventFilter === "ALL" || String(card.order_node?.event_id) === eventFilter;
+
+            return matchesSearch && matchesAssignee && matchesEvent;
         });
-    }, [cards, searchQuery, assigneeFilter]);
+    }, [cards, searchQuery, assigneeFilter, eventFilter]);
 
     // 스테이지별 카드 분류 (필터링 적용됨)
     const columns = useMemo(() => {
@@ -102,8 +110,8 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
     const assignees = useMemo(() => {
         const unique = new Map();
         initialCards.forEach((c) => {
-            if (c.assignee) {
-                unique.set(c.assignee_id, c.assignee.name);
+            if (c.worker_node) {
+                unique.set(c.assignee_id, c.worker_node.name);
             }
         });
         return Array.from(unique.entries()).map(([id, name]) => ({ id, name }));
@@ -221,40 +229,53 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
         }
     };
 
+    // 병목 카드(72시간 이상 체류) 카운트
+    const bottleneckCount = useMemo(() => {
+        const now = new Date().getTime();
+        return cards.filter(c => {
+            if (!c.stage_entered_at) return false;
+            const entered = new Date(c.stage_entered_at).getTime();
+            return (now - entered) / (1000 * 60 * 60) > 72;
+        }).length;
+    }, [cards]);
+
     return (
         <div className="flex flex-col h-full gap-4">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-card rounded-lg border border-border shadow-sm">
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="주문자 또는 패키지 검색..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 h-9 w-64 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        />
+            {/* Bottleneck Warning Banner */}
+            {bottleneckCount > 0 && (
+                <div className="bg-red-950/40 border-l-4 border-red-600 p-3 mx-4 mt-2 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                        <div className="p-1.5 bg-red-600/20 rounded-full animate-pulse">
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                        </div>
+                        <span className="text-sm font-bold text-red-200 uppercase tracking-wide">
+                            Warning: {bottleneckCount} cards are stuck for over 3 days.
+                        </span>
                     </div>
                 </div>
+            )}
+            {/* Toolbar: Heavy Metal Style */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 bg-[#0A0A0A] border-b border-zinc-800 shadow-md">
+                <KanbanFilters
+                    filters={{ query: searchQuery, assigneeId: assigneeFilter, eventId: eventFilter }}
+                    onFilterChange={(updates) => {
+                        if (updates.query !== undefined) setSearchQuery(updates.query);
+                        if (updates.assigneeId !== undefined) setAssigneeFilter(updates.assigneeId);
+                        if (updates.eventId !== undefined) setEventFilter(updates.eventId);
+                    }}
+                    events={events}
+                    assignees={assignees}
+                />
 
-                <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <select
-                        value={assigneeFilter}
-                        onChange={(e) => setAssigneeFilter(e.target.value)}
-                        className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                        <option value="ALL">All Workers</option>
-                        {assignees.map((a) => (
-                            <option key={a.id} value={a.id}>{a.name}</option>
-                        ))}
-                    </select>
-                </div>
+                <GhostCardCreator
+                    users={users}
+                    packages={packages}
+                    events={events}
+                />
             </div>
 
             {/* Board Area */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar">
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCorners}
@@ -262,7 +283,7 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
                     onDragOver={handleDragOver}
                     onDragEnd={handleDragEnd}
                 >
-                    <div className="flex h-full gap-4 pb-4 min-w-max">
+                    <div className="flex h-full gap-5 pb-6 min-w-max">
                         {STAGES.map((stage) => (
                             <StageColumn
                                 key={stage.id}
@@ -270,10 +291,7 @@ export function KanbanBoard({ initialCards }: KanbanBoardProps) {
                                 title={stage.title}
                                 cards={columns[stage.id]}
                                 onCardClick={handleCardClick}
-                            /> // Card render 부분은 StageColumn 내에서 TaskCard를 호출할 때 onClick을 전달할 수 있도록 StageColumn도 수정이 필요하거나
-                            // 방법 1: StageColumn에 onCardClick prop 추가
-                            // 방법 2: Context API 사용
-                            // 여기서는 StageColumn을 수정해서 props pass-through 하는 게 가장 빠름.
+                            />
                         ))}
                     </div>
 

@@ -34,11 +34,12 @@ export type LaborCostResult = {
 /**
  * 인건비 자동 등록
  * DELIVERED 상태 전환 시 호출되어 작업자의 commission_rate 기반으로 인건비 등록
+ * Agent 7: Gold (The Treasurer)
  *
  * @param cardId - 파이프라인 카드 ID
  * @returns 생성된 비용 정보 또는 에러
  */
-export async function autoGenerateLaborCost(cardId: number): Promise<LaborCostResult> {
+export async function createLaborExpense(cardId: number): Promise<LaborCostResult> {
     const supabase = await createClient();
 
     try {

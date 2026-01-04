@@ -212,6 +212,52 @@ export async function getPendingDeliverables(eventId?: number): Promise<Delivera
 }
 
 /**
+ * 📋 전체 산출물 조회 (관리자 대시보드용)
+ */
+export async function getAllDeliverables(): Promise<DeliverableWithDetails[]> {
+    try {
+        const supabase = await createClient();
+
+        const { data, error } = await supabase
+            .from("deliverables")
+            .select(`
+                *,
+                card:pipeline_cards!inner (
+                    id,
+                    stage,
+                    order:orders!inner (
+                        id,
+                        user_id,
+                        event:events (
+                            id,
+                            title
+                        ),
+                        package:packages (
+                            id,
+                            name
+                        ),
+                        user:profiles!inner (
+                            name,
+                            email
+                        )
+                    )
+                )
+            `)
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error(`[Sentinel] getAllDeliverables error:`, error);
+            return [];
+        }
+
+        return data || [];
+    } catch (error) {
+        console.error(`[Sentinel] Unexpected error in getAllDeliverables:`, error);
+        return [];
+    }
+}
+
+/**
  * 📊 산출물 통계 조회
  * 대시보드용 전송 현황 요약
  */

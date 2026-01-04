@@ -109,29 +109,15 @@ export function DownloadButton({
     const handleDownloadClick = () => {
         if (!externalLinkUrl || linkStatus === "INVALID") return;
 
-        startTransition(async () => {
-            // Fire-and-forget: 다운로드 기록 (await 하지 않아도 됨, 하지만 상태 업데이트를 위해 기다림)
-            // 여기서 await를 해도 a 태그의 기본 동작(이동)은 이미 발생했으므로 팝업 차단 안 됨?
-            // -> a 태그의 onClick에서 비동기 작업을 수행해도 return false나 e.preventDefault()를 안 하면 이동함.
-            // -> 하지만 React의 onClick은 비동기와 상관없이 이벤트 핸들러 종료 후 이동.
-            // -> 따라서 기록은 백그라운드로 돌리고 UI만 나중에 업데이트.
-
-            const result = await recordDownload(deliverableId);
-
-            if (result.success) {
-                setIsDownloaded(true);
-                if (result.isFirstDownload && result.firstDownloadedAt) {
-                    setFirstDownloadedAt(result.firstDownloadedAt);
-                }
-                setShowToast(true);
-                setTimeout(() => setShowToast(false), 3000);
-            }
-        });
+        // UI 즉시 업데이트 (API 리다이렉트와는 별개로 시각적 피드백 제공)
+        setIsDownloaded(true);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
     };
 
     const style = getStatusStyle();
     const isDisabled = !externalLinkUrl || linkStatus === "INVALID";
-    const href = !isDisabled && externalLinkUrl ? externalLinkUrl : undefined;
+    const href = !isDisabled ? `/api/deliverables/${deliverableId}/download` : undefined;
 
     // 공통 내부 콘텐츠
     const innerContent = (
