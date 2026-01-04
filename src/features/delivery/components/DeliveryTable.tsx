@@ -39,7 +39,7 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
     // 검색 필터링
     const filteredData = data.filter((item) => {
         const orderId = item.card?.order?.id?.toString() || "";
-        const customerName = item.card?.order?.user?.name?.toLowerCase() || ""; // queries.ts에서 user:profiles join됨
+        const customerName = item.card?.order?.user?.name?.toLowerCase() || "";
         const packageName = item.card?.order?.package?.name?.toLowerCase() || "";
         const query = searchQuery.toLowerCase();
 
@@ -162,11 +162,10 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="text-sm font-medium text-zinc-200">
-                                                {/* user 객체가 조인되지 않았을 경우 대비 */}
-                                                {(item.card?.order as any)?.user?.name || "Unknown"}
+                                                {item.card?.order?.user?.name || "Unknown"}
                                             </span>
                                             <span className="text-xs text-zinc-500">
-                                                {(item.card?.order as any)?.user?.email || ""}
+                                                {item.card?.order?.user?.email || ""}
                                             </span>
                                         </div>
                                     </TableCell>

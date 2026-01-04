@@ -1,12 +1,11 @@
-/**
- * 🔐 Login Page
- */
+import { LoginForm } from "@/features/auth/components/LoginForm";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Login | VidFlow Manager",
+    description: "Access your production engine.",
+};
+
 export default function LoginPage() {
-    return (
-        <div>
-            <h1 className="text-2xl font-bold text-white mb-6">로그인</h1>
-            {/* TODO: LoginForm Component */}
-            <p className="text-zinc-400">로그인 폼이 여기에 표시됩니다.</p>
-        </div>
-    );
+    return <LoginForm />;
 }

@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BarChart3, Grip, Wallet, Package as PackageIcon, Users, Truck } from "lucide-react";
+import { BarChart3, Grip, Wallet, Package as PackageIcon, Users, Truck, LogOut } from "lucide-react";
+import { signOut } from "@/features/auth/actions";
+import { Button } from "@/components/ui/button";
 
 /**
  * 🎸 Admin Sidebar Component
  * Reusable for Desktop (Fixed) and Mobile (Sheet)
+ * 
+ * @author Vulcan (The Forge Master)
  */
 
 // Navigation Items with Icons
@@ -20,8 +24,18 @@ const navItems = [
     { href: "/users", icon: Users, label: "Users", description: "사용자 관리" },
 ];
 
-export function AdminSidebar({ className }: { className?: string }) {
+interface AdminSidebarProps {
+    className?: string;
+    userName?: string;
+    userRole?: string;
+}
+
+export function AdminSidebar({ className, userName, userRole }: AdminSidebarProps) {
     const pathname = usePathname();
+
+    const handleLogout = async () => {
+        await signOut();
+    };
 
     return (
         <div className={cn("flex flex-col h-full bg-[#0A0A0A] border-r border-zinc-800", className)}>
@@ -78,17 +92,36 @@ export function AdminSidebar({ className }: { className?: string }) {
                 })}
             </nav>
 
-            {/* Sidebar Footer */}
-            <div className="p-4 border-t border-zinc-800">
+            {/* Sidebar Footer - User Profile & Logout */}
+            <div className="p-4 border-t border-zinc-800 space-y-3">
+                {/* User Info */}
                 <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900/30 border border-zinc-800/50">
-                    <div className="w-8 h-8 bg-zinc-800 flex items-center justify-center border border-zinc-700">
-                        <span className="text-zinc-400 text-sm">👤</span>
+                    <div className="w-8 h-8 bg-red-600/20 flex items-center justify-center border border-red-900/50">
+                        <span className="text-red-500 text-sm font-bold">
+                            {userName?.charAt(0).toUpperCase() || "A"}
+                        </span>
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-sm text-zinc-300 font-bold">Admin</span>
-                        <span className="text-[10px] text-zinc-500">System Operator</span>
+                    <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-sm text-zinc-300 font-bold truncate">
+                            {userName || "Admin"}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">
+                            {userRole || "ADMIN"}
+                        </span>
                     </div>
                 </div>
+
+                {/* Logout Button */}
+                <form action={handleLogout}>
+                    <Button
+                        type="submit"
+                        variant="ghost"
+                        className="w-full justify-start gap-2 text-zinc-500 hover:text-red-500 hover:bg-red-950/20 border border-transparent hover:border-red-900/50 transition-all"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span className="text-xs font-bold uppercase tracking-wider">Logout</span>
+                    </Button>
+                </form>
             </div>
         </div>
     );

@@ -31,6 +31,7 @@ export type DeliverableWithDetails = Deliverable & {
         order?: {
             id: number;
             user_id: string;
+            event_id?: number;
             event?: {
                 id: number;
                 title: string;
@@ -38,6 +39,10 @@ export type DeliverableWithDetails = Deliverable & {
             package?: {
                 id: number;
                 name: string;
+            };
+            user?: {
+                name: string;
+                email: string;
             };
         };
     };
