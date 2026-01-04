@@ -204,9 +204,17 @@ export async function createGhostCardWithNewUser(data: {
     }
 
     // 4. Ghost Card 생성 (기존 로직 재사용)
-    return createGhostCard({
-        eventId: data.eventId,
-        packageId: data.packageId,
-        userId: authUser.user.id,
-    });
+    try {
+        console.log("Creating Ghost Card for user:", authUser.user.id);
+        const result = await createGhostCard({
+            eventId: data.eventId,
+            packageId: data.packageId,
+            userId: authUser.user.id,
+        });
+        console.log("Ghost Card Creation Result:", result);
+        return result;
+    } catch (e) {
+        console.error("Ghost Card Creation Step Failed:", e);
+        throw e;
+    }
 }

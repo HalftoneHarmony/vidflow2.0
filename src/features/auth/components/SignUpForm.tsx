@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { signup } from "../actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Check, X } from "lucide-react";
+import { Loader2, AlertCircle, Check, X, Eye, EyeOff } from "lucide-react";
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
     const { pending } = useFormStatus();
@@ -14,8 +14,9 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
     return (
         <Button
             type="submit"
-            className="w-full h-12 text-lg font-bold uppercase tracking-wider bg-zinc-100 hover:bg-white text-black rounded-none transition-all duration-200"
+            className="w-full h-12 text-lg font-bold uppercase tracking-wider bg-zinc-100 hover:bg-white text-black rounded-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={pending || disabled}
+            aria-busy={pending}
         >
             {pending ? (
                 <>
@@ -34,12 +35,18 @@ export function SignUpForm() {
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
     const [agreed, setAgreed] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Password Validation
     const isMatch = password && confirm && password === confirm;
     const isLength = password.length >= 8;
     const isSecure = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password);
     const isValid = isMatch && isLength && isSecure && agreed;
+
+    // Password Strength Calc
+    const strengthScore = [isLength, isSecure, /[!@#$%^&*]/.test(password)].filter(Boolean).length;
+    const strengthColor = ["bg-zinc-800", "bg-red-500", "bg-amber-500", "bg-green-500"][strengthScore] || "bg-zinc-800";
+    const strengthLabel = ["Weak", "Weak", "Medium", "Strong"][strengthScore] || "None";
 
     return (
         <div className="space-y-6">
@@ -54,7 +61,7 @@ export function SignUpForm() {
 
             {state?.message ? (
                 <div className="p-6 bg-green-950/30 border border-green-900/50 flex flex-col items-center gap-4 animate-fade-up text-center">
-                    <div className="w-12 h-12 bg-green-900/50 rounded-full flex items-center justify-center text-green-500">
+                    <div className="w-12 h-12 bg-green-900/50 rounded-full flex items-center justify-center text-green-500 animate-[bounce_1s_ease-out_infinite]">
                         <Check className="w-6 h-6" />
                     </div>
                     <div className="space-y-1">
@@ -93,7 +100,7 @@ export function SignUpForm() {
                             type="email"
                             placeholder="agent@vidflow.com"
                             required
-                            className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-white text-white rounded-none transition-colors"
+                            className={`h-12 bg-zinc-900/50 border-zinc-800 border-white text-white rounded-none transition-colors ${state?.error && state.error.includes("이메일") ? "border-red-500 animate-shake" : "focus:border-white"}`}
                         />
                     </div>
 
@@ -102,31 +109,59 @@ export function SignUpForm() {
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="password">
                                 Password
                             </label>
-                            <Input
-                                id="password"
-                                name="password"
-                                type="password"
-                                placeholder="Min 8 chars, Aa1"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className={`h-12 bg-zinc-900/50 border-zinc-800 text-white rounded-none transition-colors ${password && (!isLength || !isSecure) ? "border-amber-500 focus:border-amber-500" : "focus:border-white"}`}
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Min 8 chars, Aa1"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className={`h-12 bg-zinc-900/50 border-zinc-800 text-white rounded-none transition-colors pr-10 ${password && (!isLength || !isSecure) ? "border-amber-500 focus:border-amber-500" : "focus:border-white"}`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+
+                            {/* Strength Bar */}
+                            {password && (
+                                <div className="h-1 w-full bg-zinc-800 mt-1 overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all duration-300 ${strengthColor}`}
+                                        style={{ width: `${(strengthScore / 3) * 100}%` }}
+                                    />
+                                </div>
+                            )}
                         </div>
+
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="passwordConfirm">
                                 Confirm
                             </label>
-                            <Input
-                                id="passwordConfirm"
-                                name="passwordConfirm"
-                                type="password"
-                                placeholder="Repeat password"
-                                required
-                                value={confirm}
-                                onChange={(e) => setConfirm(e.target.value)}
-                                className={`h-12 bg-zinc-900/50 border-zinc-800 text-white rounded-none transition-colors ${confirm && !isMatch ? "border-red-500 focus:border-red-500" : "focus:border-white"}`}
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="passwordConfirm"
+                                    name="passwordConfirm"
+                                    type="password"
+                                    placeholder="Repeat password"
+                                    required
+                                    value={confirm}
+                                    onChange={(e) => setConfirm(e.target.value)}
+                                    className={`h-12 bg-zinc-900/50 border-zinc-800 text-white rounded-none transition-colors ${confirm && !isMatch ? "border-red-500 focus:border-red-500" : "focus:border-white"}`}
+                                />
+                                {confirm && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        {isMatch ? <Check className="w-4 h-4 text-green-500" /> : <X className="w-4 h-4 text-red-500" />}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -155,7 +190,7 @@ export function SignUpForm() {
                                 type="checkbox"
                                 checked={agreed}
                                 onChange={(e) => setAgreed(e.target.checked)}
-                                className="w-4 h-4 rounded-none border-zinc-700 bg-zinc-900 text-red-600 focus:ring-red-500 focus:ring-offset-black"
+                                className="w-4 h-4 rounded-none border-zinc-700 bg-zinc-900 text-red-600 focus:ring-red-500 focus:ring-offset-black accent-red-600"
                             />
                         </div>
                         <label htmlFor="terms" className="text-sm text-zinc-400 select-none cursor-pointer">
@@ -164,7 +199,7 @@ export function SignUpForm() {
                     </div>
 
                     {state?.error && (
-                        <div className="p-3 bg-red-950/30 border border-red-900/50 flex items-center gap-3 animate-fade-up">
+                        <div role="alert" className="p-3 bg-red-950/30 border border-red-900/50 flex items-center gap-3 animate-fade-up">
                             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                             <span className="text-sm text-red-400 font-medium">
                                 {state.error}

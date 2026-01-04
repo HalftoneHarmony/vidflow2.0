@@ -19,12 +19,13 @@ interface GhostCardCreatorProps {
     users: { id: string; name: string; email: string }[];
     packages: { id: number; name: string }[];
     events: { id: number; title: string }[];
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
 }
 
 type TabMode = "EXISTING" | "NEW";
 
-export function GhostCardCreator({ users, packages, events }: GhostCardCreatorProps) {
-    const [isOpen, setIsOpen] = useState(false);
+export function GhostCardCreator({ users, packages, events, isOpen, onOpenChange }: GhostCardCreatorProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [mode, setMode] = useState<TabMode>("EXISTING");
     const router = useRouter();
@@ -79,7 +80,7 @@ export function GhostCardCreator({ users, packages, events }: GhostCardCreatorPr
             }
 
             toast.success("Ghost Card가 생성되었습니다. SHOOTING 단계로 진입합니다.");
-            setIsOpen(false);
+            onOpenChange(false);
             setForm({
                 userId: "", packageId: "", eventId: "",
                 newName: "", newEmail: "", newPhone: ""
@@ -93,13 +94,7 @@ export function GhostCardCreator({ users, packages, events }: GhostCardCreatorPr
     };
 
     return (
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-                <button className="flex items-center gap-2 h-10 px-4 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(220,38,38,0.3)] active:scale-95 group">
-                    <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                    REGISTER GHOST
-                </button>
-            </SheetTrigger>
+        <Sheet open={isOpen} onOpenChange={onOpenChange}>
             <SheetContent className="bg-[#0A0A0A] border-l border-zinc-800 text-zinc-100 sm:max-w-md">
                 <SheetHeader>
                     <SheetTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-2">

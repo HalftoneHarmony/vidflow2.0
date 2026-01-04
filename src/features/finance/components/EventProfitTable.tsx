@@ -64,84 +64,103 @@ export function EventProfitTable({ events }: EventProfitTableProps) {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800">
-                    {events.map((event) => (
-                        <>
-                            {/* Main Row */}
-                            <tr
-                                key={event.eventId}
-                                onClick={() => toggleExpand(event.eventId)}
-                                className="hover:bg-zinc-800/50 cursor-pointer transition-colors"
-                            >
-                                <td className="px-4 py-4 text-zinc-500">
-                                    <span className={`transition-transform inline-block ${expandedId === event.eventId ? "rotate-90" : ""}`}>
-                                        ▶
-                                    </span>
-                                </td>
-                                <td className="px-4 py-4 font-bold text-white">
-                                    {event.title}
-                                </td>
-                                <td className="px-4 py-4 text-right font-mono text-emerald-400">
-                                    {formatCurrency(event.profit.totalRevenue)}
-                                </td>
-                                <td className="px-4 py-4 text-right font-mono text-red-400">
-                                    -{formatCurrency(event.profit.pgFees)}
-                                </td>
-                                <td className="px-4 py-4 text-right font-mono text-red-400">
-                                    -{formatCurrency(event.profit.fixedExpenses)}
-                                </td>
-                                <td className="px-4 py-4 text-right font-mono text-red-400">
-                                    -{formatCurrency(event.profit.laborCosts)}
-                                </td>
-                                <td className="px-4 py-4 text-right font-mono font-bold text-yellow-400">
-                                    {formatCurrency(event.profit.netProfit)}
-                                </td>
-                                <td className="px-4 py-4 text-center">
-                                    <span className={`inline-flex items-center px-2 py-1 text-xs font-bold ${getMarginColor(event.profit.profitMargin)}`}>
-                                        {event.profit.profitMargin}%
-                                    </span>
-                                </td>
-                            </tr>
+                    {events.map((event) => {
+                        // 미니 차트용 비율 계산 (최대 100%)
+                        const profitPercent = event.profit.totalRevenue > 0
+                            ? Math.max(0, Math.min(100, (event.profit.netProfit / event.profit.totalRevenue) * 100))
+                            : 0;
+                        const expensePercent = 100 - profitPercent;
 
-                            {/* Expanded Detail Row */}
-                            {expandedId === event.eventId && (
-                                <tr key={`${event.eventId}-detail`} className="bg-zinc-950">
-                                    <td colSpan={8} className="px-8 py-6">
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <div className="bg-zinc-900 p-4 border border-zinc-800">
-                                                <p className="text-xs text-zinc-500 mb-1">총 매출</p>
-                                                <p className="text-lg font-bold text-emerald-400 font-mono">
-                                                    {formatCurrency(event.profit.totalRevenue)}
-                                                </p>
-                                            </div>
-                                            <div className="bg-zinc-900 p-4 border border-zinc-800">
-                                                <p className="text-xs text-zinc-500 mb-1">PG 수수료 (3.5%)</p>
-                                                <p className="text-lg font-bold text-red-400 font-mono">
-                                                    {formatCurrency(event.profit.pgFees)}
-                                                </p>
-                                            </div>
-                                            <div className="bg-zinc-900 p-4 border border-zinc-800">
-                                                <p className="text-xs text-zinc-500 mb-1">고정 지출</p>
-                                                <p className="text-lg font-bold text-red-400 font-mono">
-                                                    {formatCurrency(event.profit.fixedExpenses)}
-                                                </p>
-                                            </div>
-                                            <div className="bg-zinc-900 p-4 border border-zinc-800">
-                                                <p className="text-xs text-zinc-500 mb-1">자동 인건비</p>
-                                                <p className="text-lg font-bold text-red-400 font-mono">
-                                                    {formatCurrency(event.profit.laborCosts)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 p-4 bg-black border border-zinc-800">
-                                            <p className="text-xs text-zinc-500 font-mono">
-                                                순수익 공식: {formatCurrency(event.profit.totalRevenue)} - {formatCurrency(event.profit.pgFees)} - {formatCurrency(event.profit.fixedExpenses)} - {formatCurrency(event.profit.laborCosts)} = <span className="text-yellow-400 font-bold">{formatCurrency(event.profit.netProfit)}</span>
-                                            </p>
+                        return (
+                            <>
+                                {/* Main Row */}
+                                <tr
+                                    key={event.eventId}
+                                    onClick={() => toggleExpand(event.eventId)}
+                                    className="hover:bg-zinc-800/50 cursor-pointer transition-colors"
+                                >
+                                    <td className="px-4 py-4 text-zinc-500">
+                                        <span className={`transition-transform inline-block ${expandedId === event.eventId ? "rotate-90" : ""}`}>
+                                            ▶
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <div className="font-bold text-white mb-1">{event.title}</div>
+                                        {/* Mini Chart */}
+                                        <div className="w-24 h-1.5 bg-zinc-800 flex rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-emerald-500"
+                                                style={{ width: `${profitPercent}%` }}
+                                            />
+                                            <div
+                                                className="h-full bg-red-500"
+                                                style={{ width: `${expensePercent}%` }}
+                                            />
                                         </div>
                                     </td>
+                                    <td className="px-4 py-4 text-right font-mono text-emerald-400">
+                                        {formatCurrency(event.profit.totalRevenue)}
+                                    </td>
+                                    <td className="px-4 py-4 text-right font-mono text-zinc-400">
+                                        -{formatCurrency(event.profit.pgFees)}
+                                    </td>
+                                    <td className="px-4 py-4 text-right font-mono text-zinc-400">
+                                        -{formatCurrency(event.profit.fixedExpenses)}
+                                    </td>
+                                    <td className="px-4 py-4 text-right font-mono text-zinc-400">
+                                        -{formatCurrency(event.profit.laborCosts)}
+                                    </td>
+                                    <td className="px-4 py-4 text-right font-mono font-bold text-yellow-400">
+                                        {formatCurrency(event.profit.netProfit)}
+                                    </td>
+                                    <td className="px-4 py-4 text-center">
+                                        <span className={`inline-flex items-center px-2 py-1 text-xs font-bold ${getMarginColor(event.profit.profitMargin)}`}>
+                                            {event.profit.profitMargin}%
+                                        </span>
+                                    </td>
                                 </tr>
-                            )}
-                        </>
-                    ))}
+
+                                {/* Expanded Detail Row */}
+                                {expandedId === event.eventId && (
+                                    <tr key={`${event.eventId}-detail`} className="bg-zinc-950">
+                                        <td colSpan={8} className="px-8 py-6">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                <div className="bg-zinc-900 p-4 border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 mb-1">총 매출</p>
+                                                    <p className="text-lg font-bold text-emerald-400 font-mono">
+                                                        {formatCurrency(event.profit.totalRevenue)}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-zinc-900 p-4 border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 mb-1">PG 수수료 (3.5%)</p>
+                                                    <p className="text-lg font-bold text-red-400 font-mono">
+                                                        {formatCurrency(event.profit.pgFees)}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-zinc-900 p-4 border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 mb-1">고정 지출</p>
+                                                    <p className="text-lg font-bold text-red-400 font-mono">
+                                                        {formatCurrency(event.profit.fixedExpenses)}
+                                                    </p>
+                                                </div>
+                                                <div className="bg-zinc-900 p-4 border border-zinc-800">
+                                                    <p className="text-xs text-zinc-500 mb-1">자동 인건비</p>
+                                                    <p className="text-lg font-bold text-red-400 font-mono">
+                                                        {formatCurrency(event.profit.laborCosts)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 p-4 bg-black border border-zinc-800">
+                                                <p className="text-xs text-zinc-500 font-mono">
+                                                    순수익 공식: {formatCurrency(event.profit.totalRevenue)} - {formatCurrency(event.profit.pgFees)} - {formatCurrency(event.profit.fixedExpenses)} - {formatCurrency(event.profit.laborCosts)} = <span className="text-yellow-400 font-bold">{formatCurrency(event.profit.netProfit)}</span>
+                                                </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </>
+                        );
+                    })}
                 </tbody>
             </table>
         </div>

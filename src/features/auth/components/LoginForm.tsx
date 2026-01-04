@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { login } from "../actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 /**
  * 🔐 Login Form
@@ -19,8 +19,9 @@ function SubmitButton() {
     return (
         <Button
             type="submit"
-            className="w-full h-12 text-lg font-bold uppercase tracking-wider bg-red-600 hover:bg-red-500 text-white rounded-none transition-all duration-200 shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_25px_rgba(220,38,38,0.5)]"
+            className="w-full h-12 text-lg font-bold uppercase tracking-wider bg-red-600 hover:bg-red-500 text-white rounded-none transition-all duration-200 shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_25px_rgba(220,38,38,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={pending}
+            aria-busy={pending}
         >
             {pending ? (
                 <>
@@ -35,9 +36,8 @@ function SubmitButton() {
 }
 
 export function LoginForm() {
-    // Next.js 15+ (React 19) uses useActionState
-    // If error, check React version.
     const [state, formAction] = useActionState(login, { error: "" });
+    const [showPassword, setShowPassword] = useState(false);
 
     return (
         <div className="space-y-6">
@@ -61,7 +61,9 @@ export function LoginForm() {
                         type="email"
                         placeholder="agent@vidflow.com"
                         required
-                        className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 text-white placeholder:text-zinc-600 rounded-none transition-colors"
+                        className={`h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 text-white placeholder:text-zinc-600 rounded-none transition-colors ${state?.error ? "border-red-500 animate-shake" : ""}`}
+                        aria-invalid={!!state?.error}
+                        aria-describedby={state?.error ? "login-error" : undefined}
                     />
                 </div>
 
@@ -77,18 +79,33 @@ export function LoginForm() {
                             Forgot Password?
                         </Link>
                     </div>
-                    <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        placeholder="••••••••"
-                        required
-                        className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 text-white placeholder:text-zinc-600 rounded-none transition-colors"
-                    />
+                    <div className="relative">
+                        <Input
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            required
+                            className={`h-12 bg-zinc-900/50 border-zinc-800 focus:border-red-500 text-white placeholder:text-zinc-600 rounded-none transition-colors pr-10 ${state?.error ? "border-red-500 animate-shake" : ""}`}
+                            aria-invalid={!!state?.error}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                    </div>
                 </div>
 
                 {state?.error && (
-                    <div className="p-3 bg-red-950/30 border border-red-900/50 flex items-center gap-3 animate-fade-up">
+                    <div
+                        id="login-error"
+                        role="alert"
+                        className="p-3 bg-red-950/30 border border-red-900/50 flex items-center gap-3 animate-fade-up"
+                    >
                         <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                         <span className="text-sm text-red-400 font-medium">
                             {state.error}

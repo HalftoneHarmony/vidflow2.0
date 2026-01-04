@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getAllPipelineCards, getProfiles, getPackages, getEvents } from "@/features/pipeline/queries";
 import { KanbanBoard } from "@/features/pipeline/components/KanbanBoard";
 
+import { PipelineHeader } from "./PipelineHeader";
+
 export default async function PipelinePage() {
     const supabase = await createClient();
 
@@ -20,16 +22,11 @@ export default async function PipelinePage() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-140px)]">
-            <header className="mb-6 flex justify-between items-end">
-                <div>
-                    <h1 className="text-4xl font-black text-white tracking-tighter uppercase font-[family-name:var(--font-oswald)]">
-                        PIPELINE <span className="text-red-600">ENGINE</span>
-                    </h1>
-                    <p className="text-zinc-500 text-sm mt-1 uppercase tracking-widest font-mono">
-                        Systemic Workflow Control: WAITING → DELIVERED
-                    </p>
-                </div>
-            </header>
+            <PipelineHeader
+                users={users}
+                packages={packages}
+                events={events}
+            />
 
             <main className="flex-1 min-h-0">
                 <KanbanBoard

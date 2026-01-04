@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X } from "lucide-react";
+import { Menu, LogOut, User as UserIcon } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/features/auth/actions";
+import { Button } from "@/components/ui/button";
 
 /**
  * 🌍 Public Layout (Responsive)
@@ -13,14 +16,17 @@ import { Menu, X } from "lucide-react";
 const navItems = [
     { href: "/showcase", label: "Showcase", highlight: true },
     { href: "/events", label: "Events" },
-    { href: "/my-page", label: "My Page" },
+    // My Page는 로그인 여부에 따라 다르므로 여기서 제거하거나 조건부 렌더링
 ];
 
-export default function PublicLayout({
+export default async function PublicLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     return (
         <div className="min-h-screen bg-black text-white flex flex-col">
             {/* ==========================================
@@ -54,14 +60,33 @@ export default function PublicLayout({
                                                 {item.label}
                                             </Link>
                                         ))}
+                                        {user && (
+                                            <Link
+                                                href="/my-page"
+                                                className="text-lg font-medium uppercase tracking-wider text-zinc-400 hover:text-white"
+                                            >
+                                                My Page
+                                            </Link>
+                                        )}
                                     </div>
                                     <div className="p-6 border-t border-zinc-800 flex flex-col gap-3">
-                                        <Link href="/login" className="w-full py-3 text-center border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors uppercase tracking-wider text-sm">
-                                            Login
-                                        </Link>
-                                        <Link href="/join" className="w-full py-3 text-center bg-red-600 text-white hover:bg-red-500 transition-colors uppercase tracking-wider text-sm font-bold">
-                                            Sign Up
-                                        </Link>
+                                        {user ? (
+                                            <form action={signOut}>
+                                                <Button type="submit" variant="ghost" className="w-full justify-start gap-2 text-zinc-400 hover:text-red-500 hover:bg-zinc-800">
+                                                    <LogOut className="w-4 h-4" />
+                                                    LOGOUT
+                                                </Button>
+                                            </form>
+                                        ) : (
+                                            <>
+                                                <Link href="/login" className="w-full py-3 text-center border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors uppercase tracking-wider text-sm">
+                                                    Login
+                                                </Link>
+                                                <Link href="/join" className="w-full py-3 text-center bg-red-600 text-white hover:bg-red-500 transition-colors uppercase tracking-wider text-sm font-bold">
+                                                    Sign Up
+                                                </Link>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </SheetContent>
@@ -95,22 +120,46 @@ export default function PublicLayout({
                                 {item.label}
                             </Link>
                         ))}
+                        {user && (
+                            <Link
+                                href="/my-page"
+                                className="px-4 py-2 text-sm font-medium uppercase tracking-wider text-zinc-400 hover:text-white border-b-2 border-transparent hover:border-zinc-600 transition-all duration-200"
+                            >
+                                My Page
+                            </Link>
+                        )}
                     </div>
 
                     {/* Desktop Auth Buttons */}
                     <div className="hidden md:flex items-center gap-3">
-                        <Link
-                            href="/login"
-                            className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors uppercase tracking-wider"
-                        >
-                            Login
-                        </Link>
-                        <Link
-                            href="/join"
-                            className="px-4 py-2 bg-red-600 text-white text-sm font-medium uppercase tracking-wider hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_20px_rgba(220,38,38,0.5)]"
-                        >
-                            Sign Up
-                        </Link>
+                        {user ? (
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm text-zinc-500 font-mono">
+                                    {user.email?.split("@")[0]}
+                                </span>
+                                <form action={signOut}>
+                                    <Button type="submit" variant="ghost" className="h-9 px-3 text-zinc-400 hover:text-red-500 hover:bg-zinc-800">
+                                        <LogOut className="w-4 h-4 mr-2" />
+                                        LOGOUT
+                                    </Button>
+                                </form>
+                            </div>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/login"
+                                    className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors uppercase tracking-wider"
+                                >
+                                    Login
+                                </Link>
+                                <Link
+                                    href="/join"
+                                    className="px-4 py-2 bg-red-600 text-white text-sm font-medium uppercase tracking-wider hover:bg-red-500 transition-colors shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_20px_rgba(220,38,38,0.5)]"
+                                >
+                                    Sign Up
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </nav>
             </header>

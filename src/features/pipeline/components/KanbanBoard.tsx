@@ -21,7 +21,6 @@ import { AlertTriangle } from "lucide-react";
 import { StageColumn } from "./StageColumn";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailModal } from "./TaskDetailModal";
-import { GhostCardCreator } from "./GhostCardCreator";
 import { PipelineStage, PipelineCardWithDetails } from "../queries";
 import { updateCardStage } from "../actions";
 import { verifyLink } from "@/features/delivery/actions";
@@ -265,12 +264,6 @@ export function KanbanBoard({ initialCards, users, packages, events }: KanbanBoa
                     }}
                     events={events}
                     assignees={assignees}
-                />
-
-                <GhostCardCreator
-                    users={users}
-                    packages={packages}
-                    events={events}
                 />
             </div>
 

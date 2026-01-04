@@ -1,6 +1,8 @@
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 /**
  * 🛠 Admin Layout (Responsive)
@@ -8,16 +10,40 @@ import { Menu } from "lucide-react";
  * Desktop: Fixed Sidebar
  * Mobile: Hidden Sidebar + Hamburger Menu (Sheet)
  */
-export default function AdminLayout({
+export default async function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const supabase = await createClient();
+
+    // Auth Check
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+        redirect("/login");
+    }
+
+    // Profile Fetch
+    const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+    // Role Check (Optional: Middleware handles this, but doube check is good)
+    if (profile?.role === "USER") {
+        redirect("/my-page");
+    }
+
     return (
         <div className="min-h-screen bg-black text-white flex">
             {/* Desktop Sidebar (Hidden on Mobile) */}
             <aside className="hidden md:flex w-64 fixed h-screen z-50">
-                <AdminSidebar className="w-full" />
+                <AdminSidebar
+                    className="w-full"
+                    userName={profile?.name || user.email?.split("@")[0]}
+                    userRole={profile?.role}
+                />
             </aside>
 
             {/* Main Content Area */}
@@ -34,7 +60,10 @@ export default function AdminLayout({
                                 </button>
                             </SheetTrigger>
                             <SheetContent side="left" className="p-0 w-80 border-r border-zinc-800 bg-[#0A0A0A]">
-                                <AdminSidebar />
+                                <AdminSidebar
+                                    userName={profile?.name || user.email?.split("@")[0]}
+                                    userRole={profile?.role}
+                                />
                             </SheetContent>
                         </Sheet>
 
@@ -62,10 +91,10 @@ export default function AdminLayout({
                             🔔
                         </button>
 
-                        {/* Profile */}
-                        <button className="w-10 h-10 bg-red-600/20 border border-red-600/30 flex items-center justify-center hover:bg-red-600/30 transition-colors text-red-500 font-bold text-sm">
-                            A
-                        </button>
+                        {/* Profile Avatar (Mini) */}
+                        <div className="w-10 h-10 bg-red-600/20 border border-red-600/30 flex items-center justify-center text-red-500 font-bold text-sm">
+                            {profile?.name ? profile.name.charAt(0).toUpperCase() : "A"}
+                        </div>
                     </div>
                 </header>
 

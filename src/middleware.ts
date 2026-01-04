@@ -8,14 +8,9 @@ import { NextResponse, type NextRequest } from "next/server";
  * @author Vulcan (The Forge Master)
  */
 
-// 인증이 필요한 경로들
+// 인증이 필요한 경로들 - /admin/* 모든 관리자 경로
 const PROTECTED_ROUTES = [
-    "/dashboard",
-    "/pipeline",
-    "/finance",
-    "/products",
-    "/users",
-    "/delivery",
+    "/admin",  // /admin으로 시작하는 모든 경로 보호
 ];
 
 // 로그인된 사용자가 접근하면 리다이렉트할 경로들
@@ -64,7 +59,7 @@ export async function middleware(request: NextRequest) {
     const isAuthRoute = AUTH_ROUTES.some(route => pathname === route);
 
     if (isAuthRoute && user) {
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
 
     // 3. (선택) 관리자 전용 경로 체크

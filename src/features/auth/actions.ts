@@ -41,7 +41,7 @@ export async function login(prevState: ActionState, formData: FormData): Promise
     }
 
     revalidatePath("/", "layout");
-    redirect("/dashboard");
+    redirect("/admin/dashboard");
 }
 
 /**
@@ -147,7 +147,7 @@ export async function signIn(formData: FormData) {
     }
 
     revalidatePath("/", "layout");
-    redirect("/dashboard");
+    redirect("/admin/dashboard");
 }
 
 /**
