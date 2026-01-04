@@ -59,7 +59,7 @@ VALUES
         'chulsoo.kim@example.com',
         '영상 편집 진행 상황 문의',
         '안녕하세요, 지난 주 NPCA Seoul 대회에서 촬영하셨던 Pro Stage 패키지 주문했습니다.\n\n현재 편집 진행 상황이 어떻게 되는지 궁금합니다. 언제쯤 영상을 받아볼 수 있을까요?\n\n주문번호: ORD-2026-0123\n\n감사합니다.',
-        'order',
+        'support',
         'in_progress',
         '편집 70% 완료, 1/8 예상 납품 예정 - 담당: 김편집'
     ),
@@ -68,7 +68,7 @@ VALUES
         'younghee.park@example.com',
         '환불 요청 관련',
         '안녕하세요.\n\n촬영 당일 개인 사정으로 대회에 불참하게 되었습니다.\n환불 절차가 어떻게 되는지 알려주세요.\n\n주문번호: ORD-2026-0087\n\n정말 죄송합니다.',
-        'refund',
+        'complaint',
         'pending',
         NULL
     ),
@@ -77,7 +77,7 @@ VALUES
         'minsoo.lee@example.com',
         '추가 영상 요청',
         '기본 패키지로 주문했는데, 백스테이지 영상도 추가로 구매할 수 있을까요?\n가능하다면 가격도 알려주세요!',
-        'order',
+        'support',
         'resolved',
         '업그레이드 안내 완료, Pro Stage로 차액 결제 진행됨'
     ),
@@ -86,7 +86,7 @@ VALUES
         'jihyun.choi@example.com',
         '영상 품질 관련 문의',
         '받은 영상의 해상도가 4K가 맞나요?\n제 컴퓨터에서 재생하면 1080p로 보이는데 확인 부탁드립니다.',
-        'other',
+        'feedback',
         'resolved',
         '4K 원본 파일 재전송 완료, 고객 확인 완료'
     ),
