@@ -157,6 +157,8 @@ function formatCurrency(amount: number): string {
     return `₩${amount.toLocaleString()}`;
 }
 
+import { DashboardClientWrapper, AnimatedStatCard } from "./dashboard-client";
+
 export default async function DashboardPage() {
     const supabase = await createClient();
 
@@ -182,12 +184,6 @@ export default async function DashboardPage() {
     const totalActive = stats.shooting + stats.editing + stats.ready;
     const unassignedCount = stats.unassigned;
 
-    // Revenue Stats
-    const todayRevenue = comprehensiveStats?.today?.revenue || 0;
-    const monthRevenue = comprehensiveStats?.this_month?.revenue || 0;
-    const totalRevenue = comprehensiveStats?.all_time?.total_revenue || 0;
-    const weekRevenue = weeklyStats?.revenue || 0;
-
     // Upcoming Events
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -202,68 +198,73 @@ export default async function DashboardPage() {
         .slice(0, 5);
 
     return (
-        <div className="space-y-8 pb-10">
-            {/* Announcement Banner */}
-            <DashboardAnnouncementBanner announcements={announcements} />
-
-            {/* Header */}
-            <div className="flex justify-between items-end border-b border-zinc-800 pb-6">
-                <div>
-                    <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
-                        Mission Control
-                    </h1>
-                    <p className="text-zinc-500 font-mono text-sm mt-1">
-                        Operational Status & Command Center
-                    </p>
+        <DashboardClientWrapper
+            banner={<DashboardAnnouncementBanner announcements={announcements} />}
+            header={
+                <div className="flex justify-between items-end border-b border-zinc-800 pb-6">
+                    <div>
+                        <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
+                            Mission Control
+                        </h1>
+                        <p className="text-zinc-500 font-mono text-sm mt-1">
+                            Operational Status & Command Center
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Link
+                            href="/admin/events"
+                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center"
+                        >
+                            + New Event
+                        </Link>
+                        <Link
+                            href="/admin/pipeline"
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center"
+                        >
+                            View Board
+                        </Link>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Link
-                        href="/admin/events"
-                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center"
-                    >
-                        + New Event
-                    </Link>
-                    <Link
-                        href="/admin/pipeline"
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center"
-                    >
-                        View Board
-                    </Link>
-                </div>
-            </div>
-
-            {/* Top Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <OperationalStatCard
-                    label="Active Productions"
-                    value={totalActive}
-                    subValue="In Progress (Shoot/Edit/Review)"
-                    color="blue"
-                    icon={<div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
-                />
-                <OperationalStatCard
-                    label="Upcoming Shoots"
-                    value={upcomingEvents.length}
-                    subValue="Scheduled Events"
-                    color="amber"
-                />
-                <OperationalStatCard
-                    label="In Editing"
-                    value={stats.editing}
-                    subValue="Post-Production Queue"
-                    color="zinc"
-                />
-                <OperationalStatCard
-                    label="Needs Attention"
-                    value={unassignedCount}
-                    subValue="Unassigned Tasks"
-                    color={unassignedCount > 0 ? "rose" : "zinc"}
-                />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left: Upcoming Schedule */}
-                <div className="lg:col-span-2 space-y-6">
+            }
+            statsGrid={
+                <>
+                    <AnimatedStatCard>
+                        <OperationalStatCard
+                            label="Active Productions"
+                            value={totalActive}
+                            subValue="In Progress (Shoot/Edit/Review)"
+                            color="blue"
+                            icon={<div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
+                        />
+                    </AnimatedStatCard>
+                    <AnimatedStatCard>
+                        <OperationalStatCard
+                            label="Upcoming Shoots"
+                            value={upcomingEvents.length}
+                            subValue="Scheduled Events"
+                            color="amber"
+                        />
+                    </AnimatedStatCard>
+                    <AnimatedStatCard>
+                        <OperationalStatCard
+                            label="In Editing"
+                            value={stats.editing}
+                            subValue="Post-Production Queue"
+                            color="zinc"
+                        />
+                    </AnimatedStatCard>
+                    <AnimatedStatCard>
+                        <OperationalStatCard
+                            label="Needs Attention"
+                            value={unassignedCount}
+                            subValue="Unassigned Tasks"
+                            color={unassignedCount > 0 ? "rose" : "zinc"}
+                        />
+                    </AnimatedStatCard>
+                </>
+            }
+            mainContent={
+                <>
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
                             <span className="w-3 h-3 bg-amber-500"></span>
@@ -288,10 +289,10 @@ export default async function DashboardPage() {
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Right: Pipeline Distribution */}
-                <div className="space-y-6">
+                </>
+            }
+            sideContent={
+                <>
                     <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
                         <span className="w-3 h-3 bg-blue-500"></span>
                         Pipeline Pulse
@@ -333,8 +334,9 @@ export default async function DashboardPage() {
                             <p className="text-[10px] text-zinc-600 mt-1 uppercase text-right">Projects Delivered</p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                </>
+            }
+        />
     );
 }
+
