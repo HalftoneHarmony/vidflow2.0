@@ -82,7 +82,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
             const matchesSearch =
                 card.order_node?.user_node?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 card.order_node?.package_node?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                card.order_id.toString().includes(searchQuery) ||
+                card.order_id?.toString().includes(searchQuery) ||
                 false;
 
             const matchesAssignee =

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BarChart3, Grip, Wallet, Package as PackageIcon, Users, Truck, LogOut, Calendar, Film, HelpCircle, Info } from "lucide-react";
+import { BarChart3, Grip, Wallet, Package as PackageIcon, Users, Truck, LogOut, Calendar, Film, HelpCircle, Info, TrendingUp, MessageSquare, ScrollText, Megaphone } from "lucide-react";
 import { signOut } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
     { href: "/admin/dashboard", icon: BarChart3, label: "Dashboard", description: "수익 분석 및 KPI" },
+    { href: "/admin/analytics", icon: TrendingUp, label: "Analytics", description: "심층 데이터 분석" },
     { href: "/admin/pipeline", icon: Grip, label: "Pipeline", description: "칸반 보드" },
     { href: "/admin/events", icon: Calendar, label: "Events", description: "대회 관리" },
     { href: "/admin/delivery", icon: Truck, label: "Delivery", description: "전송 관리" },
@@ -24,6 +25,9 @@ const navItems = [
     { href: "/admin/showcase", icon: Film, label: "Showcase", description: "쇼케이스 관리" },
     { href: "/admin/about", icon: Info, label: "About", description: "소개 페이지 관리" },
     { href: "/admin/users", icon: Users, label: "Users", description: "사용자 관리" },
+    { href: "/admin/contacts", icon: MessageSquare, label: "Contacts", description: "문의 관리" },
+    { href: "/admin/announcements", icon: Megaphone, label: "Announcements", description: "공지사항 관리" },
+    { href: "/admin/logs", icon: ScrollText, label: "Logs", description: "활동 로그" },
 ];
 
 interface AdminSidebarProps {

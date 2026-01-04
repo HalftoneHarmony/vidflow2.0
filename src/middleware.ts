@@ -13,6 +13,14 @@ const PROTECTED_ROUTES = [
     "/admin",  // /admin으로 시작하는 모든 경로 보호
 ];
 
+// ADMIN 전용 경로 - EDITOR는 접근 불가
+const ADMIN_ONLY_ROUTES = [
+    "/admin/users",
+    "/admin/contacts",
+    "/admin/logs",
+    "/admin/announcements",
+];
+
 // 로그인된 사용자가 접근하면 리다이렉트할 경로들
 const AUTH_ROUTES = ["/login", "/join"];
 
@@ -75,6 +83,16 @@ export async function middleware(request: NextRequest) {
         if (profile?.role !== "ADMIN" && profile?.role !== "EDITOR") {
             console.warn(`[Sentinel] Unauthorized access attempt by ${user.email} to ${pathname}`);
             return NextResponse.redirect(new URL("/", request.url));
+        }
+
+        // 4. ADMIN 전용 경로 체크 - EDITOR는 접근 불가
+        const isAdminOnlyRoute = ADMIN_ONLY_ROUTES.some(route =>
+            pathname.startsWith(route)
+        );
+
+        if (isAdminOnlyRoute && profile?.role !== "ADMIN") {
+            console.warn(`[Sentinel] EDITOR ${user.email} tried to access ADMIN-only route: ${pathname}`);
+            return NextResponse.redirect(new URL("/admin/dashboard", request.url));
         }
     }
 
