@@ -1,6 +1,25 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+
+.animate-pulse-border {
+  animation: pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-border {
+
+  0%,
+  100% {
+    border-color: rgba(220, 38, 38, 0.8);
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.2);
+  }
+
+  50% {
+    border-color: rgba(220, 38, 38, 0.4);
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================

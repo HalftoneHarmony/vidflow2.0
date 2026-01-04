@@ -149,6 +149,7 @@ export type Event = {
     location: string | null;
     is_active: boolean;
     thumbnail_url: string | null;
+    disciplines: string[];
     created_at: string;
 };
 

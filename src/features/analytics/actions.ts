@@ -81,21 +81,65 @@ export async function getEventProfitability(eventId: number): Promise<EventProfi
     return data as EventProfitability;
 }
 
-// 이벤트 분석 뷰 조회
-export async function getEventAnalytics() {
+export type EventAnalyticsData = {
+    event_id: number;
+    event_title: string;
+    event_date: string;
+    total_revenue: number; // View might return string or number depending on driver, casting carefully
+    gross_revenue: number;
+    net_profit: number;
+    total_expenses: number;
+    total_orders: number;
+    package_counts: Record<string, number>;
+};
+
+// 이벤트 분석 뷰 조회 및 패키지 분포 집계
+export async function getEventAnalytics(): Promise<EventAnalyticsData[]> {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
+    // 1. 기본 분석 데이터 조회 (뷰)
+    const { data: analyticsData, error: analyticsError } = await supabase
         .from("v_event_analytics")
         .select("*")
         .order("event_date", { ascending: false });
 
-    if (error) {
-        console.error("Error fetching event analytics:", error);
+    if (analyticsError) {
+        console.error("Error fetching event analytics:", analyticsError);
         return [];
     }
 
-    return data || [];
+    // 2. 패키지 분포 데이터 조회 (전체 주문 + 패키지 JOIN)
+    // Note: 대규모 데이터셋에서는 성능 이슈가 있을 수 있으나 현재 규모에서는 괜찮음.
+    // 추후 event_id 별로 분할 조회하거나 DB 함수로 이관 권장.
+    const { data: orderData, error: orderError } = await supabase
+        .from("orders")
+        .select("event_id, packages(name)");
+
+    if (orderError) {
+        console.error("Error fetching order packages:", orderError);
+        // 실패해도 기본 데이터는 리턴
+    }
+
+    return (analyticsData || []).map((event: any) => {
+        const eventOrders = orderData?.filter((o: any) => o.event_id === event.event_id) || [];
+
+        // 패키지별 카운트 집계
+        const package_counts = eventOrders.reduce((acc: Record<string, number>, curr: any) => {
+            const pkg = curr.packages?.name || "Unspecified";
+            acc[pkg] = (acc[pkg] || 0) + 1;
+            return acc;
+        }, {});
+
+        return {
+            ...event,
+            gross_revenue: Number(event.gross_revenue || 0),
+            net_profit: Number(event.net_profit || 0),
+            total_expenses: Number(event.total_expenses || 0),
+            total_orders: Number(event.total_orders || 0),
+            profit_margin: Number(event.profit_margin_pct || 0),
+            package_counts
+        };
+    });
 }
 
 // =============================================

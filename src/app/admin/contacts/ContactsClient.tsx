@@ -20,7 +20,9 @@ import {
     AlertCircle,
     Loader2,
     X,
-    FileText
+    FileText,
+    Send,
+    Reply
 } from "lucide-react";
 import {
     getContactSubmissions,
@@ -56,6 +58,8 @@ export function ContactsClient() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedContact, setSelectedContact] = useState<ContactSubmission | null>(null);
     const [adminNotes, setAdminNotes] = useState("");
+    const [replyMessage, setReplyMessage] = useState("");
+    const [showReplyForm, setShowReplyForm] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     // 데이터 로딩
@@ -115,6 +119,41 @@ export function ContactsClient() {
     const openDetailModal = (contact: ContactSubmission) => {
         setSelectedContact(contact);
         setAdminNotes(contact.admin_notes || "");
+        setReplyMessage("");
+        setShowReplyForm(false);
+    };
+
+    // 답변 발송 시뮬레이션
+    const handleSendReply = async () => {
+        if (!selectedContact) return;
+        if (!replyMessage.trim()) {
+            toast.error("답변 내용을 입력해주세요.");
+            return;
+        }
+
+        startTransition(async () => {
+            // 실제로는 여기서 이메일 발송 API를 호출해야 함
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 시뮬레이션 지연
+
+            // 답변 발송 후 자동으로 상태를 'resolved'로 변경하고 메모에 발송 기록 추가
+            const updatedNotes = (adminNotes ? adminNotes + "\n\n" : "") + `[답변 발송됨] ${new Date().toLocaleString()}\n${replyMessage}`;
+
+            const result = await updateContactStatus(selectedContact.id, "resolved", updatedNotes);
+
+            if (result.success) {
+                toast.success(`'${selectedContact.email}' 님에게 답변이 발송되었습니다.`);
+                // UI 업데이트
+                setSubmissions(prev => prev.map(s =>
+                    s.id === selectedContact.id ? { ...s, status: "resolved", admin_notes: updatedNotes } : s
+                ));
+                setSelectedContact(null);
+                setReplyMessage("");
+                setShowReplyForm(false);
+                setAdminNotes("");
+            } else {
+                toast.error("업데이트 실패: " + result.error);
+            }
+        });
     };
 
     // 날짜 포맷
@@ -176,8 +215,8 @@ export function ContactsClient() {
                             key={status}
                             onClick={() => setActiveFilter(status)}
                             className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all ${activeFilter === status
-                                    ? "bg-red-600 text-white"
-                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                ? "bg-red-600 text-white"
+                                : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                                 }`}
                         >
                             {statusConfig[status].label}
@@ -336,8 +375,8 @@ export function ContactsClient() {
                                                 onClick={() => handleStatusUpdate(selectedContact.id, status)}
                                                 disabled={isPending || selectedContact.status === status}
                                                 className={`flex-1 py-2 text-xs font-bold uppercase transition-all ${selectedContact.status === status
-                                                        ? `${statusConfig[status].bgColor} ${statusConfig[status].color} border border-current`
-                                                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+                                                    ? `${statusConfig[status].bgColor} ${statusConfig[status].color} border border-current`
+                                                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
                                                     } disabled:opacity-50`}
                                             >
                                                 {isPending ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : statusConfig[status].label}
@@ -358,6 +397,44 @@ export function ContactsClient() {
                                         rows={3}
                                         className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-600 transition-colors resize-none"
                                     />
+                                </div>
+
+                                {/* Reply Section */}
+                                <div className="space-y-2 pt-2 border-t border-zinc-800">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                                            <Reply className="w-3 h-3" />
+                                            답변 하기
+                                        </label>
+                                        <button
+                                            onClick={() => setShowReplyForm(!showReplyForm)}
+                                            className="text-xs text-blue-400 hover:text-blue-300 font-bold"
+                                        >
+                                            {showReplyForm ? "취소" : "이메일 답변 작성"}
+                                        </button>
+                                    </div>
+
+                                    {showReplyForm && (
+                                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                            <textarea
+                                                value={replyMessage}
+                                                onChange={(e) => setReplyMessage(e.target.value)}
+                                                placeholder={`To: ${selectedContact.email}\n\n안녕하세요, VidFlow 지원팀입니다.\n문의주신 내용에 대해 답변드립니다...`}
+                                                rows={5}
+                                                className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-blue-600 transition-colors resize-none"
+                                            />
+                                            <button
+                                                onClick={handleSendReply}
+                                                disabled={isPending || !replyMessage.trim()}
+                                                className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> 답변 발송 및 해결 처리</>}
+                                            </button>
+                                            <p className="text-[10px] text-zinc-500 text-center">
+                                                * 발송 시 상태가 '해결됨'으로 변경되며, 내용이 메모에 자동 저장됩니다.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

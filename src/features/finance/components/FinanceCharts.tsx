@@ -147,7 +147,7 @@ export function EventProfitChart({ data }: EventProfitChartProps) {
             </div>
 
             <div className="h-[320px] w-full relative z-10">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                     <BarChart
                         data={data}
                         margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -270,7 +270,7 @@ export function CostBreakdownChart({ data }: CostBreakdownChartProps) {
                     <span className="text-zinc-500 font-mono text-sm">{compactFormatter(activeItem?.value || 0)}</span>
                 </div>
 
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minHeight={300}>
                     <PieChart>
                         <Pie
                             data={data}

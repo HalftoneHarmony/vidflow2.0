@@ -13,6 +13,25 @@ import { revalidatePath } from "next/cache";
 export type UserRole = "ADMIN" | "EDITOR" | "USER";
 
 /**
+ * 사용자 프로필 조회
+ */
+export async function getUserProfile(userId: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+    if (error) {
+        console.error("[Vulcan] Get user profile error:", error.message);
+        return null;
+    }
+
+    return data;
+}
+
+/**
  * 사용자 역할 업데이트
  */
 export async function updateUserRole(userId: string, role: UserRole) {

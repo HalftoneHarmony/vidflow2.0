@@ -14,11 +14,19 @@ import { PackageWithShowcase } from "@/features/showcase/queries";
 import { PackageCard } from "@/features/showcase/components";
 import { verifyAndCreateOrder } from "@/features/orders/actions";
 import { PORTONE_CONFIG } from "@/lib/portone";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 type EventDetailClientProps = {
     packages: PackageWithShowcase[];
     eventId: number;
     isActive: boolean;
+    disciplines: string[];
 };
 
 // 가상의 추가 옵션 (나중에 DB화 가능)
@@ -42,9 +50,11 @@ export function EventDetailClient({
     packages,
     eventId,
     isActive,
+    disciplines,
 }: EventDetailClientProps) {
     const router = useRouter();
     const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
+    const [selectedDiscipline, setSelectedDiscipline] = useState<string>("");
     const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
     const [isProcessing, setIsProcessing] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
@@ -88,9 +98,21 @@ export function EventDetailClient({
         setSelectedOptions(new Set()); // 패키지 변경 시 옵션 초기화
     };
 
+    // Validation
+    const isReadyToPay = () => {
+        if (!selectedPackage || !userId) return false;
+        if (disciplines.length > 0 && !selectedDiscipline) return false;
+        return true;
+    };
+
     const handleProceedToPayment = async () => {
         if (!selectedPackage || !userId) {
             if (!userId) alert("로그인이 필요합니다.");
+            return;
+        }
+
+        if (disciplines.length > 0 && !selectedDiscipline) {
+            alert("참가 종목(Discipline)을 선택해주세요.");
             return;
         }
 
@@ -125,6 +147,7 @@ export function EventDetailClient({
                     eventId,
                     packageId: selectedPackage.id,
                     options: Array.from(selectedOptions),
+                    discipline: selectedDiscipline,
                 },
             });
 
@@ -151,7 +174,8 @@ export function EventDetailClient({
                 userId,
                 eventId,
                 selectedPackage.id,
-                totalAmount
+                totalAmount,
+                selectedDiscipline || undefined
             );
 
             if (result.success) {
@@ -224,6 +248,28 @@ export function EventDetailClient({
                         </div>
                     </div>
                 )}
+
+                {/* Discipline Selection */}
+                {selectedPackage && disciplines.length > 0 && (
+                    <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg animate-in fade-in slide-in-from-top-4 mt-6">
+                        <h3 className="text-lg font-bold text-white mb-4">참가 종목 (Discipline)</h3>
+                        <div className="space-y-3">
+                            <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
+                                <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-white">
+                                    <SelectValue placeholder="종목을 선택해주세요" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                                    {disciplines.map((d) => (
+                                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-sm text-zinc-500">
+                                * 신청하시는 종목을 정확히 선택해주세요.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 주문 요약 (오른쪽 1/3) */}
@@ -244,6 +290,14 @@ export function EventDetailClient({
                                         <div className="text-zinc-400">{formatPrice(selectedPackage.price)}</div>
                                     </div>
                                 </div>
+
+                                {/* 선택된 종목 정보 */}
+                                {selectedDiscipline && (
+                                    <div className="mb-4">
+                                        <div className="text-sm text-zinc-500 mb-1">선택한 종목</div>
+                                        <div className="text-lg font-bold text-white">{selectedDiscipline}</div>
+                                    </div>
+                                )}
 
                                 {/* 선택된 옵션 정보 */}
                                 {selectedOptions.size > 0 && (
@@ -300,10 +354,10 @@ export function EventDetailClient({
                                 {/* 결제 버튼 */}
                                 <button
                                     onClick={handleProceedToPayment}
-                                    disabled={!isActive || selectedPackage.is_sold_out || isProcessing || !userId}
+                                    disabled={!isActive || selectedPackage.is_sold_out || isProcessing || !userId || (disciplines.length > 0 && !selectedDiscipline)}
                                     className={`
                     w-full py-4 font-bold text-lg uppercase tracking-wider transition-all relative
-                    ${isActive && !selectedPackage.is_sold_out && !isProcessing && userId
+                    ${isActive && !selectedPackage.is_sold_out && !isProcessing && userId && (!disciplines.length || selectedDiscipline)
                                             ? "bg-red-500 text-white hover:bg-red-600 active:scale-[0.98]"
                                             : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                                         }
@@ -320,6 +374,8 @@ export function EventDetailClient({
                                         "품절"
                                     ) : !userId ? (
                                         "로그인 필요"
+                                    ) : (disciplines.length > 0 && !selectedDiscipline) ? (
+                                        "종목을 선택해주세요"
                                     ) : (
                                         "결제하기"
                                     )}

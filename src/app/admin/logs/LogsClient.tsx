@@ -78,6 +78,45 @@ export function LogsClient() {
     const clearFilters = () => { setSelectedActions([]); setSelectedUser(null); setDateRange({ start: "", end: "" }); };
     const hasActiveFilters = selectedActions.length > 0 || selectedUser || dateRange.start || dateRange.end;
 
+    const handleExport = (format: "csv" | "json") => {
+        let content = "";
+        const fileName = `activity_logs_${new Date().toISOString().split("T")[0]}.${format}`;
+
+        if (format === "json") {
+            content = JSON.stringify(filteredLogs, null, 2);
+        } else {
+            // CSV 헤더
+            const headers = ["ID", "Time", "Action", "User", "Entity Type", "Entity ID", "Old Value", "New Value"];
+            const rows = filteredLogs.map(log => [
+                log.id,
+                new Date(log.created_at).toLocaleString(),
+                log.action,
+                log.user_name || "System",
+                log.entity_type || "",
+                log.entity_id || "",
+                JSON.stringify(log.old_value || "").replace(/"/g, '""'),
+                JSON.stringify(log.new_value || "").replace(/"/g, '""')
+            ]);
+
+            content = [
+                headers.join(","),
+                ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+            ].join("\n");
+        }
+
+        const blob = new Blob([content], { type: format === "json" ? "application/json" : "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", fileName);
+            link.style.visibility = "hidden";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+
     return (
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
@@ -90,9 +129,25 @@ export function LogsClient() {
                         <p className="text-sm text-zinc-400">시스템 활동 로그 · {filteredLogs.length}건</p>
                     </div>
                 </div>
-                <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-2 px-4 py-2 text-sm border transition-colors ${showFilters || hasActiveFilters ? "bg-red-600/20 border-red-600 text-red-400" : "border-zinc-800 text-zinc-400 hover:border-zinc-600"}`}>
-                    <Filter className="w-4 h-4" />필터{hasActiveFilters && <span className="w-2 h-2 bg-red-500 rounded-full" />}
-                </button>
+                <div className="flex gap-2">
+                    <div className="flex bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
+                        <button
+                            onClick={() => handleExport("csv")}
+                            className="px-3 py-2 text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors border-r border-zinc-800"
+                        >
+                            CSV
+                        </button>
+                        <button
+                            onClick={() => handleExport("json")}
+                            className="px-3 py-2 text-xs font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                        >
+                            JSON
+                        </button>
+                    </div>
+                    <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-2 px-4 py-2 text-sm border transition-colors ${showFilters || hasActiveFilters ? "bg-red-600/20 border-red-600 text-red-400" : "border-zinc-800 text-zinc-400 hover:border-zinc-600"}`}>
+                        <Filter className="w-4 h-4" />필터{hasActiveFilters && <span className="w-2 h-2 bg-red-500 rounded-full" />}
+                    </button>
+                </div>
             </div>
 
             {showFilters && (

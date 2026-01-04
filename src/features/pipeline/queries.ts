@@ -9,6 +9,7 @@ export type PipelineCardWithDetails = Omit<Database["public"]["Tables"]["pipelin
     order_node: Database["public"]["Tables"]["orders"]["Row"] & {
         user_node: { name: string; email: string };
         package_node: { name: string };
+        event_node: { title: string; event_date: string };
     };
     worker_node: { name: string; email: string; commission_rate: number } | null;
     deliverables: Database["public"]["Tables"]["deliverables"]["Row"][];
@@ -25,7 +26,8 @@ export async function getAllPipelineCards(supabase: SupabaseClient<Database>): P
             order_node:orders!inner (
                 *,
                 user_node:profiles!inner (name, email),
-                package_node:packages!inner (name)
+                package_node:packages!inner (name),
+                event_node:events!inner (title, event_date)
             ),
             worker_node:profiles (name, email, commission_rate),
             deliverables (*)
@@ -51,7 +53,8 @@ export async function getPipelineCardsByEvent(supabase: SupabaseClient<Database>
             order_node:orders!inner (
                 *,
                 user_node:profiles!inner (name, email),
-                package_node:packages!inner (name)
+                package_node:packages!inner (name),
+                event_node:events!inner (title, event_date)
             ),
             worker_node:profiles (name, email, commission_rate),
             deliverables (*)

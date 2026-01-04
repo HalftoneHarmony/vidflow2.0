@@ -2,16 +2,19 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AlertTriangle, User, Package } from "lucide-react";
+import { AlertTriangle, User, Package, CheckCircle2, Circle } from "lucide-react";
 import { PipelineCardWithDetails } from "../queries";
 
 interface TaskCardProps {
     card: PipelineCardWithDetails;
     onClick?: (card: PipelineCardWithDetails) => void;
     isOverlay?: boolean;
+    isSelected?: boolean;
+    onToggleSelect?: (id: number) => void;
+    selectionMode?: boolean;
 }
 
-export function TaskCard({ card, onClick, isOverlay }: TaskCardProps) {
+export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect, selectionMode }: TaskCardProps) {
     const {
         attributes,
         listeners,
@@ -22,6 +25,7 @@ export function TaskCard({ card, onClick, isOverlay }: TaskCardProps) {
     } = useSortable({
         id: card.id.toString(),
         data: { card },
+        disabled: selectionMode, // Disable drag in selection mode
     });
 
     const style = {
@@ -29,20 +33,127 @@ export function TaskCard({ card, onClick, isOverlay }: TaskCardProps) {
         transition,
     };
 
-    // 병목 감지: 3일(72시간) 이상 체류 시
-    const isBottleneck = (() => {
-        if (!card.stage_entered_at) return false;
-        const entered = new Date(card.stage_entered_at).getTime();
-        const now = new Date().getTime();
-        const diffHours = (now - entered) / (1000 * 60 * 60);
-        return diffHours > 72;
+    // Calculate days since event OR stage_entered_at (whichever is applicable)
+    const { deltaDays, delayType } = (() => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        // Method 1: Days since event date
+        let eventDelta = 0;
+        if (card.order_node?.event_node?.event_date) {
+            const eventDate = new Date(card.order_node.event_node.event_date);
+            eventDate.setHours(0, 0, 0, 0);
+            eventDelta = Math.floor((now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        // Method 2: Days since stage_entered_at (fallback when event is in future)
+        let stageDelta = 0;
+        if (card.stage_entered_at) {
+            const stageDate = new Date(card.stage_entered_at);
+            stageDate.setHours(0, 0, 0, 0);
+            stageDelta = Math.floor((now.getTime() - stageDate.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        // Prioritize event delay if event is in the past
+        if (eventDelta > 0) {
+            return { deltaDays: eventDelta, delayType: "event" as const };
+        }
+        // Fallback to stage delay
+        if (stageDelta > 0) {
+            return { deltaDays: stageDelta, delayType: "stage" as const };
+        }
+        return { deltaDays: 0, delayType: null };
     })();
 
-    // 드래그 중이거나 오버레이 모드일 때 클릭 이벤트 전파 방지
-    const handleClick = () => {
+    // Status visual logic
+    const isStuck7 = deltaDays >= 7 && card.stage !== "DELIVERED";
+    const isStuck3 = deltaDays >= 3 && deltaDays < 7 && card.stage !== "DELIVERED";
+
+    // Package Color Logic (Simple Hash)
+    const getPackageColor = (name: string) => {
+        const colors = [
+            "text-blue-400 border-blue-500/20 bg-blue-500/10",
+            "text-purple-400 border-purple-500/20 bg-purple-500/10",
+            "text-pink-400 border-pink-500/20 bg-pink-500/10",
+            "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+            "text-yellow-400 border-yellow-500/20 bg-yellow-500/10",
+            "text-cyan-400 border-cyan-500/20 bg-cyan-500/10",
+        ];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    };
+
+    const packageStyle = getPackageColor(card.order_node?.package_node?.name || "");
+
+    const getContainerStyles = () => {
+        let styles = "relative p-2.5 mb-2 border shadow-sm touch-none select-none transition-all duration-300 group rounded-md overflow-hidden ";
+
+        if (isOverlay) {
+            styles += "bg-zinc-900 shadow-[0_0_30px_rgba(220,38,38,0.3)] scale-105 rotate-1 cursor-grabbing border-red-500 z-50 ring-1 ring-red-500/50 ";
+        } else if (isDragging) {
+            styles += "bg-zinc-900 opacity-30 z-0 border-zinc-800 grayscale ";
+        } else if (isSelected) {
+            styles += "bg-zinc-900 border-red-500 ring-1 ring-red-500/50 translate-x-1.5 ";
+        } else {
+            // Normal State Backgrounds
+            if (isStuck7) {
+                styles += "bg-gradient-to-br from-red-950/30 to-zinc-950 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.2)] animate-pulse-border ";
+            } else if (isStuck3) {
+                styles += "bg-gradient-to-br from-orange-950/20 to-zinc-950 border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.15)] ";
+            } else {
+                styles += "bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800/60 opacity-100 hover:border-red-500/30 hover:shadow-[0_4px_15px_-4px_rgba(220,38,38,0.15)] hover:-translate-y-0.5 ";
+            }
+
+            if (!selectionMode) styles += "cursor-grab active:cursor-grabbing ";
+        }
+
+        return styles;
+    };
+
+    // Prominent Stuck Badge
+    const getStuckBadge = () => {
+        if (card.stage === "DELIVERED") return null;
+        if (isStuck7) {
+            return (
+                <div className="absolute top-0 right-0 z-20 flex items-center shadow-lg">
+                    <div className="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-bl-lg flex items-center gap-1 animate-pulse">
+                        <AlertTriangle className="h-3 w-3" />
+                        +{deltaDays} DAYS
+                    </div>
+                </div>
+            );
+        }
+        if (isStuck3) {
+            return (
+                <div className="absolute top-0 right-0 z-20 flex items-center shadow-lg">
+                    <div className="bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-bl-lg flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        +{deltaDays} DAYS
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    // Handle clicks
+    const handleClick = (e: React.MouseEvent) => {
+        if (selectionMode && onToggleSelect) {
+            e.stopPropagation();
+            onToggleSelect(card.id);
+            return;
+        }
         if (!isDragging && !isOverlay && onClick) {
             onClick(card);
         }
+    };
+
+    const handleSelectClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onToggleSelect?.(card.id);
     };
 
     return (
@@ -52,87 +163,93 @@ export function TaskCard({ card, onClick, isOverlay }: TaskCardProps) {
             {...listeners}
             {...attributes}
             onClick={handleClick}
-            className={`
-                relative p-4 mb-3 border bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-md touch-none select-none transition-all duration-200 group rounded-lg overflow-hidden
-                ${isOverlay
-                    ? "shadow-[0_0_30px_rgba(220,38,38,0.3)] scale-105 rotate-1 cursor-grabbing border-red-500 z-50 ring-1 ring-red-500/50"
-                    : isDragging
-                        ? "opacity-30 z-0 border-zinc-800 grayscale"
-                        : "opacity-100 hover:border-red-500/30 cursor-grab active:cursor-grabbing hover:shadow-[0_4px_20px_-4px_rgba(220,38,38,0.15)] hover:-translate-y-0.5 border-zinc-800/60"
-                }
-                ${isBottleneck ? "border-red-600/80 shadow-[0_0_15px_rgba(220,38,38,0.15)]" : ""}
-            `}
+            className={getContainerStyles()}
         >
-            {/* Glossy Overlay Effect */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none opacity-50" />
+            {/* Stuck Gradient Overlay for severe delay */}
+            {isStuck7 && <div className="absolute inset-0 bg-red-500/5 pointer-events-none" />}
 
-            {/* Header: Order ID & Warning */}
-            <div className="relative flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-zinc-500 group-hover:text-red-400 transition-colors bg-zinc-950/50 px-1.5 py-0.5 rounded border border-zinc-800/50">
-                        #{card.order_id}
-                    </span>
-                    {card.updated_at && (
-                        <div className={`w-1.5 h-1.5 rounded-full ${isBottleneck ? 'bg-red-500 animate-pulse' : 'bg-zinc-700'}`} />
-                    )}
-                </div>
-                {isBottleneck && (
-                    <span className="text-[9px] font-black text-red-500 bg-red-950/40 px-2 py-0.5 border border-red-500/30 uppercase tracking-widest flex items-center gap-1 rounded-sm shadow-[0_0_10px_rgba(220,38,38,0.2)]">
-                        <AlertTriangle className="h-3 w-3" />
-                        STUCK
+            {/* Selection Checkbox */}
+            <div
+                onClick={handleSelectClick}
+                className={`
+                    absolute top-3 right-3 z-30 transition-all duration-200 cursor-pointer
+                    ${selectionMode ? 'opacity-100 scale-100' : 'opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100'}
+                    ${(isStuck7 || isStuck3) ? 'mt-6' : ''} 
+                `}
+            >
+                {/* Adjusted top position dynamically or via class logic to avoid overlapping badge if needed, 
+                    but here simple z-30 might cover badge or be covered. 
+                    I'll add margin-top if stuck to push it down below the badge. */}
+                {isSelected ? (
+                    <CheckCircle2 className="w-5 h-5 text-red-500 bg-zinc-950 rounded-full shadow-lg" />
+                ) : (
+                    <Circle className="w-5 h-5 text-zinc-600 hover:text-zinc-400 bg-zinc-950/80 rounded-full shadow-lg" />
+                )}
+            </div>
+
+            {/* Corner Badge for Stuck Status */}
+            {getStuckBadge()}
+
+            {/* Row 1: Name - Number - Discipline */}
+            <div className="flex items-center gap-2 mb-1.5 pr-16 w-full overflow-hidden relative z-10">
+                {/* Name */}
+                <h4 className="shrink truncate font-bold text-xs text-zinc-200 group-hover:text-red-400 transition-colors">
+                    {card.order_node?.user_node?.name || "Unknown"}
+                </h4>
+
+                {/* Number */}
+                <span className="shrink-0 text-[10px] font-mono font-bold text-zinc-500">
+                    NO.---
+                </span>
+
+                {/* Discipline */}
+                {(card.order_node as any).discipline && (
+                    <span className="shrink-0 text-[9px] font-semibold text-zinc-400 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded uppercase leading-none">
+                        {(card.order_node as any).discipline.slice(0, 3)}
                     </span>
                 )}
             </div>
 
-            {/* Body: Package & Customer */}
-            <div className="relative mb-4">
-                <h4 className="font-bold text-sm text-zinc-100 mb-1 truncate font-[family-name:var(--font-oswald)] uppercase tracking-wide group-hover:text-red-500 transition-colors duration-300">
+            {/* Row 2: Package */}
+            <div className={`mb-2 inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-medium max-w-full relative z-10 ${packageStyle}`}>
+                <Package className="w-3 h-3 opacity-70 shrink-0" />
+                <span className="truncate">
                     {card.order_node?.package_node?.name || "Unknown Package"}
-                </h4>
-                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                    <div className="w-1 h-3 bg-red-600/50 rounded-full" />
-                    <span className="font-medium text-zinc-300">{card.order_node?.user_node?.name || "Unknown User"}</span>
-                </div>
+                </span>
             </div>
 
-            {/* Footer: Worker & Status */}
-            <div className="relative flex justify-between items-end pt-3 border-t border-zinc-800/50">
-                <div className="flex items-center gap-2">
-                    <div
-                        className={`
-                            h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-colors
-                            ${card.worker_node
-                                ? 'bg-zinc-900 text-zinc-200 border-zinc-700 group-hover:border-red-900/50'
-                                : 'bg-zinc-950 text-zinc-600 border-zinc-800 border-dashed'}
-                        `}
-                    >
-                        {card.worker_node?.name ? card.worker_node.name.charAt(0).toUpperCase() : <User className="h-3 w-3" />}
+            {/* Row 3: Worker & Status Info */}
+            <div className="flex items-center justify-between mt-auto pt-2 border-t border-zinc-900/50 relative z-10">
+                {/* Worker */}
+                <div className="flex items-center gap-1.5">
+                    <div className={`
+                        h-4 w-4 rounded-full flex items-center justify-center text-[7px] font-bold border
+                        ${card.worker_node
+                            ? 'bg-zinc-800 text-zinc-200 border-zinc-700'
+                            : 'bg-transparent text-zinc-700 border-zinc-800 border-dashed'}
+                    `}>
+                        {card.worker_node?.name ? card.worker_node.name.charAt(0).toUpperCase() : <User className="h-2 w-2" />}
                     </div>
-
-                    {!card.worker_node && (
-                        <span className="text-[10px] text-zinc-600 uppercase tracking-tight font-bold">Unassigned</span>
-                    )}
+                    <span className="text-[9px] text-zinc-500 font-medium truncate max-w-[60px]">
+                        {card.worker_node?.name || "Unassigned"}
+                    </span>
                 </div>
 
-                {/* Status Badges */}
-                <div className="flex flex-col items-end gap-1.5">
-                    {card.deliverables && card.deliverables.length > 0 && (
-                        <div className="flex items-center gap-1 text-[9px] font-medium text-zinc-400">
-                            <Package className="h-3 w-3 text-zinc-600" />
-                            <span>{card.deliverables.length} FILES</span>
-                        </div>
+                {/* Delivered Status or Files */}
+                <div className="flex items-center gap-1">
+                    {card.deliverables && card.deliverables.length > 0 && !(card.stage === "DELIVERED") && (
+                        <span className="text-[9px] font-mono text-zinc-600 bg-zinc-900/50 px-1 py-0.5 rounded border border-zinc-900">
+                            {card.deliverables.length} FILES
+                        </span>
                     )}
 
                     {card.stage === "DELIVERED" && (
-                        <div className={`
-                            flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 border rounded-sm tracking-wider
-                            ${card.deliverables?.some(d => d.is_downloaded)
-                                ? "bg-green-950/20 text-green-500 border-green-900/50 shadow-[0_0_8px_rgba(34,197,94,0.1)]"
-                                : "bg-zinc-900 text-zinc-500 border-zinc-800"
-                            }
-                        `}>
+                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded border shadow-sm ${card.deliverables?.some(d => d.is_downloaded)
+                            ? "text-green-500 bg-green-950/20 border-green-900/30"
+                            : "text-zinc-500 bg-zinc-900 border-zinc-800"
+                            }`}>
                             {card.deliverables?.some(d => d.is_downloaded) ? "RECEIVED" : "SENT"}
-                        </div>
+                        </span>
                     )}
                 </div>
             </div>

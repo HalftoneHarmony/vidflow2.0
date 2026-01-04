@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BarChart3, Grip, Wallet, Package as PackageIcon, Users, Truck, LogOut, Calendar, Film, HelpCircle, Info, TrendingUp, MessageSquare, ScrollText, Megaphone } from "lucide-react";
+import { BarChart3, Grip, Wallet, Package as PackageIcon, Users, Truck, LogOut, Calendar, Film, HelpCircle, Info, TrendingUp, MessageSquare, ScrollText, Megaphone, Settings } from "lucide-react";
 import { signOut } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 
@@ -16,11 +16,10 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
     { href: "/admin/dashboard", icon: BarChart3, label: "Dashboard", description: "수익 분석 및 KPI" },
-    { href: "/admin/analytics", icon: TrendingUp, label: "Analytics", description: "심층 데이터 분석" },
+    { href: "/admin/analytics", icon: TrendingUp, label: "Analytics", description: "통합 데이터 분석" },
     { href: "/admin/pipeline", icon: Grip, label: "Pipeline", description: "칸반 보드" },
     { href: "/admin/events", icon: Calendar, label: "Events", description: "대회 관리" },
     { href: "/admin/delivery", icon: Truck, label: "Delivery", description: "전송 관리" },
-    { href: "/admin/finance", icon: Wallet, label: "Finance", description: "매출/지출 관리" },
     { href: "/admin/products", icon: PackageIcon, label: "Products", description: "패키지 관리" },
     { href: "/admin/showcase", icon: Film, label: "Showcase", description: "쇼케이스 관리" },
     { href: "/admin/about", icon: Info, label: "About", description: "소개 페이지 관리" },
@@ -28,15 +27,18 @@ const navItems = [
     { href: "/admin/contacts", icon: MessageSquare, label: "Contacts", description: "문의 관리" },
     { href: "/admin/announcements", icon: Megaphone, label: "Announcements", description: "공지사항 관리" },
     { href: "/admin/logs", icon: ScrollText, label: "Logs", description: "활동 로그" },
+    { href: "/admin/settings/general", icon: Settings, label: "Settings", description: "일반 설정" },
 ];
 
 interface AdminSidebarProps {
     className?: string;
     userName?: string;
     userRole?: string;
+    siteName?: string;
+    siteLogo?: string;
 }
 
-export function AdminSidebar({ className, userName, userRole }: AdminSidebarProps) {
+export function AdminSidebar({ className, userName, userRole, siteName = "VidFlow", siteLogo = "V" }: AdminSidebarProps) {
     const pathname = usePathname();
 
     const handleLogout = async () => {
@@ -50,12 +52,12 @@ export function AdminSidebar({ className, userName, userRole }: AdminSidebarProp
                 <Link href="/admin/dashboard" className="flex items-center gap-3 group">
                     {/* Logo Mark */}
                     <div className="w-10 h-10 bg-red-600 flex items-center justify-center group-hover:bg-red-500 transition-colors">
-                        <span className="text-white font-bold text-xl font-[family-name:var(--font-oswald)]">V</span>
+                        <span className="text-white font-bold text-xl font-[family-name:var(--font-oswald)]">{siteLogo}</span>
                     </div>
                     {/* Logo Text */}
                     <div className="flex flex-col">
                         <span className="text-lg font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wider">
-                            VidFlow
+                            {siteName}
                         </span>
                         <span className="text-[10px] text-zinc-500 uppercase tracking-widest">
                             Admin Control

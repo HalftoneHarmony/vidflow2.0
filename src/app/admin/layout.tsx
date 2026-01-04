@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { GlobalSearch } from "@/components/admin/global-search";
 
+import { getSettings } from "@/features/settings/actions";
+
 /**
  * 🛠 Admin Layout (Responsive)
  * 
@@ -17,6 +19,11 @@ export default async function AdminLayout({
     children: React.ReactNode;
 }) {
     const supabase = await createClient();
+
+    // Fetch Settings
+    const settings = await getSettings(["site_name", "site_logo_symbol"]);
+    const siteName = settings.site_name;
+    const siteLogo = settings.site_logo_symbol;
 
     // Auth Check
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -44,6 +51,8 @@ export default async function AdminLayout({
                     className="w-full"
                     userName={profile?.name || user.email?.split("@")[0]}
                     userRole={profile?.role}
+                    siteName={siteName}
+                    siteLogo={siteLogo}
                 />
             </aside>
 
@@ -64,6 +73,8 @@ export default async function AdminLayout({
                                 <AdminSidebar
                                     userName={profile?.name || user.email?.split("@")[0]}
                                     userRole={profile?.role}
+                                    siteName={siteName}
+                                    siteLogo={siteLogo}
                                 />
                             </SheetContent>
                         </Sheet>
@@ -73,7 +84,7 @@ export default async function AdminLayout({
                             Admin Control Center
                         </span>
                         <span className="text-white font-[family-name:var(--font-oswald)] uppercase tracking-wider text-lg sm:hidden">
-                            VidFlow
+                            {siteName || "VidFlow"}
                         </span>
                     </div>
 

@@ -11,9 +11,12 @@ interface StageColumnProps {
     cards: PipelineCardWithDetails[];
     color: string;
     onCardClick?: (card: PipelineCardWithDetails) => void;
+    selectionMode?: boolean;
+    selectedIds?: number[];
+    onToggleSelect?: (id: number) => void;
 }
 
-export function StageColumn({ stage, title, cards, color, onCardClick }: StageColumnProps) {
+export function StageColumn({ stage, title, cards, color, onCardClick, selectionMode, selectedIds, onToggleSelect }: StageColumnProps) {
     const { setNodeRef, isOver } = useDroppable({
         id: stage,
     });
@@ -65,6 +68,9 @@ export function StageColumn({ stage, title, cards, color, onCardClick }: StageCo
                             key={card.id}
                             card={card}
                             onClick={onCardClick}
+                            selectionMode={selectionMode}
+                            isSelected={selectedIds?.includes(card.id)}
+                            onToggleSelect={onToggleSelect}
                         />
                     ))}
                     {cards.length === 0 && (

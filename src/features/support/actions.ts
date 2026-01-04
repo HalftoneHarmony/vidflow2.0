@@ -58,6 +58,24 @@ export async function getLegalDocument(type: "privacy" | "terms" | "refund"): Pr
     return data;
 }
 
+// Get user inquiries
+export async function getUserInquiries(userId: string) {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from("contact_submissions")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        console.error("Error fetching user inquiries:", error);
+        return [];
+    }
+
+    return data || [];
+}
+
 // Submit contact form
 export async function submitContactForm(formData: {
     name: string;

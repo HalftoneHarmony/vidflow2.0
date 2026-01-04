@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button";
  * Mobile: Hamburger Menu (Sheet)
  */
 
+import { getSettings } from "@/features/settings/actions";
+
+// ... existing imports ...
+
 // Navigation Items
 const navItems = [
     { href: "/showcase", label: "Showcase", highlight: true },
@@ -28,6 +32,11 @@ export default async function PublicLayout({
 }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    // Fetch Settings
+    const settings = await getSettings(["site_name", "site_logo_symbol"]);
+    const siteName = settings.site_name || "VidFlow";
+    const siteLogo = settings.site_logo_symbol || "V";
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col">
@@ -49,7 +58,7 @@ export default async function PublicLayout({
                                 <div className="flex flex-col h-full">
                                     <div className="p-6 border-b border-zinc-800">
                                         <span className="text-xl font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wider">
-                                            VidFlow
+                                            {siteName}
                                         </span>
                                     </div>
                                     <div className="flex-1 flex flex-col p-6 gap-4">
@@ -97,10 +106,10 @@ export default async function PublicLayout({
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-3 group">
                             <div className="w-10 h-10 bg-red-600 flex items-center justify-center group-hover:bg-red-500 transition-colors">
-                                <span className="text-white font-bold text-xl font-[family-name:var(--font-oswald)]">V</span>
+                                <span className="text-white font-bold text-xl font-[family-name:var(--font-oswald)]">{siteLogo}</span>
                             </div>
                             <span className="text-xl font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wider hidden sm:block">
-                                VidFlow
+                                {siteName}
                             </span>
                         </Link>
                     </div>
@@ -184,10 +193,10 @@ export default async function PublicLayout({
                         <div className="md:col-span-2">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 bg-red-600 flex items-center justify-center">
-                                    <span className="text-white font-bold text-xl font-[family-name:var(--font-oswald)]">V</span>
+                                    <span className="text-white font-bold text-xl font-[family-name:var(--font-oswald)]">{siteLogo}</span>
                                 </div>
                                 <span className="text-xl font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wider">
-                                    VidFlow
+                                    {siteName}
                                 </span>
                             </div>
                             <p className="text-zinc-500 text-sm max-w-md mb-4 leading-relaxed">
@@ -228,7 +237,7 @@ export default async function PublicLayout({
                     {/* Copyright Bar */}
                     <div className="border-t border-zinc-800 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between text-xs">
                         <p className="text-zinc-600 uppercase tracking-widest text-center md:text-left">
-                            © 2026 VidFlow. All rights reserved.
+                            © {new Date().getFullYear()} {siteName}. All rights reserved.
                         </p>
                         <p className="text-zinc-700 uppercase tracking-widest mt-4 md:mt-0 text-center md:text-right">
                             Engineered by <span className="text-red-800 font-bold">Venom</span>

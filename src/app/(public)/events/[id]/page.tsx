@@ -171,6 +171,7 @@ export default async function EventDetailPage({
                         packages={packages}
                         eventId={eventId}
                         isActive={event.is_active}
+                        disciplines={event.disciplines || []}
                     />
                 )}
             </section>

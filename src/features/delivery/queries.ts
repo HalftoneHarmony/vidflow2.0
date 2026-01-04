@@ -32,6 +32,7 @@ export type DeliverableWithDetails = Deliverable & {
             id: number;
             user_id: string;
             event_id?: number;
+            discipline?: string | null;
             event?: {
                 id: number;
                 title: string;
@@ -43,6 +44,7 @@ export type DeliverableWithDetails = Deliverable & {
             user?: {
                 name: string;
                 email: string;
+                phone?: string | null;
             };
         };
     };
@@ -233,6 +235,7 @@ export async function getAllDeliverables(): Promise<DeliverableWithDetails[]> {
                     order:orders!inner (
                         id,
                         user_id,
+                        discipline,
                         event:events (
                             id,
                             title
@@ -243,7 +246,8 @@ export async function getAllDeliverables(): Promise<DeliverableWithDetails[]> {
                         ),
                         user:profiles!inner (
                             name,
-                            email
+                            email,
+                            phone
                         )
                     )
                 )

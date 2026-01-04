@@ -70,6 +70,30 @@ export function GlobalSearch() {
     const inputRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // Recent Searches
+    const [recentSearches, setRecentSearches] = useState<string[]>([]);
+    const [showRecent, setShowRecent] = useState(false);
+
+    useEffect(() => {
+        const stored = localStorage.getItem("vidflow_recent_searches");
+        if (stored) {
+            setRecentSearches(JSON.parse(stored));
+        }
+    }, [isOpen]);
+
+    const addToRecent = (term: string) => {
+        const newRecent = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
+        setRecentSearches(newRecent);
+        localStorage.setItem("vidflow_recent_searches", JSON.stringify(newRecent));
+    };
+
+    const removeRecent = (term: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newRecent = recentSearches.filter(s => s !== term);
+        setRecentSearches(newRecent);
+        localStorage.setItem("vidflow_recent_searches", JSON.stringify(newRecent));
+    };
+
     // Keyboard shortcut (Cmd+K / Ctrl+K)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -110,6 +134,7 @@ export function GlobalSearch() {
     // Search handler
     const handleSearch = (value: string) => {
         setQuery(value);
+        setShowRecent(false);
 
         if (value.trim().length < 2) {
             setResults([]);
@@ -122,10 +147,16 @@ export function GlobalSearch() {
         });
     };
 
+    const handleSelectResult = (term: string) => {
+        addToRecent(term);
+        handleClose();
+    };
+
     const handleClose = () => {
         setIsOpen(false);
         setQuery("");
         setResults([]);
+        setShowRecent(false);
     };
 
     return (
@@ -163,7 +194,7 @@ export function GlobalSearch() {
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
                             className="fixed top-20 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50"
                         >
-                            <div className="bg-zinc-900 border border-zinc-800 shadow-2xl overflow-hidden">
+                            <div className="bg-zinc-900 border border-zinc-800 shadow-2xl overflow-hidden min-h-[100px] flex flex-col">
                                 {/* Search Input */}
                                 <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
                                     {isPending ? (
@@ -175,13 +206,19 @@ export function GlobalSearch() {
                                         ref={inputRef}
                                         type="text"
                                         value={query}
-                                        onChange={(e) => handleSearch(e.target.value)}
+                                        onFocus={() => {
+                                            if (!query && recentSearches.length > 0) setShowRecent(true);
+                                        }}
+                                        onChange={(e) => {
+                                            handleSearch(e.target.value);
+                                            if (!e.target.value && recentSearches.length > 0) setShowRecent(true);
+                                        }}
                                         placeholder="주문, 고객, 이벤트 검색..."
                                         className="flex-1 bg-transparent text-white placeholder:text-zinc-500 outline-none text-base font-[family-name:var(--font-oswald)]"
                                     />
                                     {query && (
                                         <button
-                                            onClick={() => { setQuery(""); setResults([]); }}
+                                            onClick={() => { setQuery(""); setResults([]); setShowRecent(true); inputRef.current?.focus(); }}
                                             className="p-1 hover:bg-zinc-800 rounded transition-colors"
                                         >
                                             <X className="w-4 h-4 text-zinc-500" />
@@ -195,93 +232,123 @@ export function GlobalSearch() {
                                     </button>
                                 </div>
 
-                                {/* Results */}
+                                {/* Content Area */}
                                 <div className="max-h-[400px] overflow-y-auto">
-                                    {query.trim().length < 2 ? (
-                                        <div className="p-8 text-center text-zinc-500">
-                                            <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                                            <p className="text-sm">2자 이상 입력해주세요</p>
-                                            <p className="text-xs text-zinc-600 mt-1">
-                                                고객명, 이메일, 이벤트명으로 검색하세요
-                                            </p>
-                                        </div>
-                                    ) : results.length === 0 && !isPending ? (
-                                        <div className="p-8 text-center text-zinc-500">
-                                            <ShoppingBag className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                                            <p className="text-sm">검색 결과가 없습니다</p>
-                                        </div>
-                                    ) : (
-                                        <div className="divide-y divide-zinc-800">
-                                            {results.map((result, index) => (
-                                                <motion.div
-                                                    key={result.order_id}
-                                                    initial={{ opacity: 0, x: -10 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{ delay: index * 0.05 }}
+                                    {/* Recent Searches */}
+                                    {showRecent && !query && recentSearches.length > 0 && (
+                                        <div>
+                                            <div className="px-4 py-2 bg-zinc-900/50 border-b border-zinc-800 text-xs text-zinc-500 font-bold uppercase tracking-wider">
+                                                Recent Searches
+                                            </div>
+                                            {recentSearches.map((term, index) => (
+                                                <div
+                                                    key={index}
+                                                    onClick={() => handleSearch(term)}
+                                                    className="flex items-center justify-between px-4 py-3 hover:bg-zinc-800/50 cursor-pointer group"
                                                 >
-                                                    <Link
-                                                        href={`/admin/pipeline?order=${result.order_id}`}
-                                                        onClick={handleClose}
-                                                        className="flex items-center gap-4 px-4 py-3 hover:bg-zinc-800/50 transition-colors group"
+                                                    <div className="flex items-center gap-3 text-zinc-400 group-hover:text-white">
+                                                        <Search className="w-4 h-4" />
+                                                        <span className="text-sm">{term}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => removeRecent(term, e)}
+                                                        className="text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                                                     >
-                                                        {/* Order ID Badge */}
-                                                        <div className="w-16 h-10 bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                                                            <span className="text-xs font-mono text-zinc-400">
-                                                                #{result.order_id}
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Details */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <User className="w-3 h-3 text-zinc-500" />
-                                                                <span className="text-sm font-bold text-white truncate">
-                                                                    {result.customer_name}
-                                                                </span>
-                                                                <span className={`px-1.5 py-0.5 text-[10px] font-bold uppercase ${getStatusColor(result.status)}`}>
-                                                                    {result.status}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-4 mt-1 text-xs text-zinc-500">
-                                                                <span className="flex items-center gap-1">
-                                                                    <Calendar className="w-3 h-3" />
-                                                                    {result.event_title}
-                                                                </span>
-                                                                <span className="flex items-center gap-1">
-                                                                    <Package className="w-3 h-3" />
-                                                                    {result.package_name}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Price & Date */}
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-sm font-mono font-bold text-white">
-                                                                {currencyFormatter(result.total_price)}
-                                                            </p>
-                                                            <p className="text-[10px] text-zinc-500">
-                                                                {formatDate(result.created_at)}
-                                                            </p>
-                                                        </div>
-                                                    </Link>
-                                                </motion.div>
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
                                             ))}
                                         </div>
+                                    )}
+
+                                    {/* Search Results */}
+                                    {query && (
+                                        <>
+                                            {query.trim().length < 2 ? (
+                                                <div className="p-8 text-center text-zinc-500">
+                                                    <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                                                    <p className="text-sm">2자 이상 입력해주세요</p>
+                                                    <p className="text-xs text-zinc-600 mt-1">
+                                                        고객명, 이메일, 이벤트명으로 검색하세요
+                                                    </p>
+                                                </div>
+                                            ) : results.length === 0 && !isPending ? (
+                                                <div className="p-8 text-center text-zinc-500">
+                                                    <ShoppingBag className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                                                    <p className="text-sm">검색 결과가 없습니다</p>
+                                                </div>
+                                            ) : (
+                                                <div className="divide-y divide-zinc-800">
+                                                    {results.map((result, index) => (
+                                                        <motion.div
+                                                            key={result.order_id}
+                                                            initial={{ opacity: 0, x: -10 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            transition={{ delay: index * 0.05 }}
+                                                        >
+                                                            <Link
+                                                                href={`/admin/pipeline?order=${result.order_id}`}
+                                                                onClick={() => handleSelectResult(result.customer_name)}
+                                                                className="flex items-center gap-4 px-4 py-3 hover:bg-zinc-800/50 transition-colors group"
+                                                            >
+                                                                {/* Order ID Badge */}
+                                                                <div className="w-16 h-10 bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                                                                    <span className="text-xs font-mono text-zinc-400">
+                                                                        #{result.order_id}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Details */}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <User className="w-3 h-3 text-zinc-500" />
+                                                                        <span className="text-sm font-bold text-white truncate">
+                                                                            {result.customer_name}
+                                                                        </span>
+                                                                        <span className={`px-1.5 py-0.5 text-[10px] font-bold uppercase ${getStatusColor(result.status)}`}>
+                                                                            {result.status}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-4 mt-1 text-xs text-zinc-500">
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Calendar className="w-3 h-3" />
+                                                                            {result.event_title}
+                                                                        </span>
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Package className="w-3 h-3" />
+                                                                            {result.package_name}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Price & Date */}
+                                                                <div className="text-right flex-shrink-0">
+                                                                    <p className="text-sm font-mono font-bold text-white">
+                                                                        {currencyFormatter(result.total_price)}
+                                                                    </p>
+                                                                    <p className="text-[10px] text-zinc-500">
+                                                                        {formatDate(result.created_at)}
+                                                                    </p>
+                                                                </div>
+                                                            </Link>
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
 
                                 {/* Footer */}
-                                {results.length > 0 && (
-                                    <div className="px-4 py-2 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
-                                        <span>{results.length}개 결과</span>
-                                        <span className="flex items-center gap-2">
-                                            <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 font-mono">↑↓</kbd>
-                                            탐색
-                                            <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 font-mono">↵</kbd>
-                                            열기
-                                        </span>
-                                    </div>
-                                )}
+                                <div className="px-4 py-2 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
+                                    <span>{query ? `${results.length}개 결과` : (recentSearches.length > 0 ? "최근 검색어" : "검색어 입력")}</span>
+                                    <span className="flex items-center gap-2">
+                                        <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 font-mono">↑↓</kbd>
+                                        탐색
+                                        <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 font-mono">↵</kbd>
+                                        열기
+                                    </span>
+                                </div>
                             </div>
                         </motion.div>
                     </>

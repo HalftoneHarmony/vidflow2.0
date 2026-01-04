@@ -12,6 +12,7 @@ export type AdminEvent = {
     location: string;
     is_active: boolean;
     thumbnail_url: string;
+    disciplines: string[];
     created_at: string;
     package_count: number;
 };
@@ -35,5 +36,6 @@ export async function getAdminEvents(): Promise<AdminEvent[]> {
     return data.map((event: any) => ({
         ...event,
         package_count: event.packages?.[0]?.count || 0,
+        disciplines: event.disciplines || [],
     }));
 }

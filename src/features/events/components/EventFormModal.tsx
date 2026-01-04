@@ -21,6 +21,9 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
     const isEditMode = !!event;
     const [isLoading, setIsLoading] = useState(false);
     const [isActive, setIsActive] = useState(event ? event.is_active : true);
+    const [disciplinesStr, setDisciplinesStr] = useState(
+        event?.disciplines ? event.disciplines.join(", ") : ""
+    );
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -104,6 +107,24 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                             defaultValue={event?.thumbnail_url}
                             placeholder="https://..."
                             className="bg-zinc-950 border-zinc-800 focus:border-red-500 text-white"
+                        />
+                    </div>
+
+                    {/* Disciplines */}
+                    <div className="space-y-2">
+                        <Label htmlFor="disciplines" className="text-zinc-400">Disciplines (Categories)</Label>
+                        <Input
+                            id="disciplines"
+                            value={disciplinesStr}
+                            onChange={(e) => setDisciplinesStr(e.target.value)}
+                            placeholder="e.g. Bodybuilding, Physique, Sport Model"
+                            className="bg-zinc-950 border-zinc-800 focus:border-red-500 text-white"
+                        />
+                        <p className="text-[10px] text-zinc-500">Comma separated values (e.g. GI, NO-GI)</p>
+                        <input
+                            type="hidden"
+                            name="disciplines"
+                            value={JSON.stringify(disciplinesStr.split(",").map(s => s.trim()).filter(Boolean))}
                         />
                     </div>
 

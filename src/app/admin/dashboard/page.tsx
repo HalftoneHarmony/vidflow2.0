@@ -11,7 +11,8 @@ import { getComprehensiveStats, getWeeklyStats } from "@/features/analytics/acti
 import { getActiveAnnouncements } from "@/features/admin/actions";
 import { format } from "date-fns";
 import Link from "next/link";
-import { AlertTriangle, Bell, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
+import { DashboardAnnouncementBanner } from "./announcement-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -143,35 +144,7 @@ function StageProgressBar({ stage, count, total, color }: { stage: string, count
     );
 }
 
-// 📢 Announcement Banner
-function AnnouncementBanner({ announcements }: { announcements: any[] }) {
-    if (announcements.length === 0) return null;
 
-    const urgent = announcements.find(a => a.type === "urgent" || a.type === "warning");
-    const announcement = urgent || announcements[0];
-
-    const typeStyles: Record<string, string> = {
-        urgent: "bg-red-600/20 border-red-600/50 text-red-400",
-        warning: "bg-amber-600/20 border-amber-600/50 text-amber-400",
-        info: "bg-blue-600/20 border-blue-600/50 text-blue-400",
-        promotion: "bg-emerald-600/20 border-emerald-600/50 text-emerald-400",
-        maintenance: "bg-zinc-600/20 border-zinc-600/50 text-zinc-400",
-    };
-
-    return (
-        <div className={`p-4 border rounded-sm flex items-center gap-3 ${typeStyles[announcement.type] || typeStyles.info}`}>
-            {announcement.type === "urgent" || announcement.type === "warning" ? (
-                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            ) : (
-                <Bell className="w-5 h-5 flex-shrink-0" />
-            )}
-            <div className="flex-1">
-                <span className="font-bold text-sm">{announcement.title}</span>
-                <span className="text-sm opacity-80 ml-2">{announcement.content}</span>
-            </div>
-        </div>
-    );
-}
 
 // 금액 포맷팅
 function formatCurrency(amount: number): string {
@@ -231,7 +204,7 @@ export default async function DashboardPage() {
     return (
         <div className="space-y-8 pb-10">
             {/* Announcement Banner */}
-            <AnnouncementBanner announcements={announcements} />
+            <DashboardAnnouncementBanner announcements={announcements} />
 
             {/* Header */}
             <div className="flex justify-between items-end border-b border-zinc-800 pb-6">

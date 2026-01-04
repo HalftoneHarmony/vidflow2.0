@@ -16,15 +16,24 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
+import { AlertTriangle, Maximize2, Minimize2, CheckSquare, X } from "lucide-react";
 
 import { StageColumn } from "./StageColumn";
 import { TaskCard } from "./TaskCard";
 import { TaskDetailModal } from "./TaskDetailModal";
 import { PipelineStage, PipelineCardWithDetails } from "../queries";
 import { updateCardStage } from "../actions";
+import { updateCardsStage, updateCardsAssignee } from "../bulk-actions";
 import { verifyLink } from "@/features/delivery/actions";
 import { KanbanFilters, PipelineFiltersState } from "./KanbanFilters";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 interface KanbanBoardProps {
     initialCards: PipelineCardWithDetails[];
@@ -50,6 +59,10 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
     const [activeDragStage, setActiveDragStage] = useState<PipelineStage | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    // Selection Mode
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
     // 상세 모달 상태
     const [selectedCard, setSelectedCard] = useState<PipelineCardWithDetails | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,6 +71,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
     const [searchQuery, setSearchQuery] = useState("");
     const [assigneeFilter, setAssigneeFilter] = useState<string>("ALL");
     const [eventFilter, setEventFilter] = useState<string>("ALL");
+    const [packageFilter, setPackageFilter] = useState<string>("ALL");
 
     // useEffect for background check or polling could go here
     useEffect(() => {
@@ -92,9 +106,12 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
             const matchesEvent =
                 eventFilter === "ALL" || String(card.order_node?.event_id) === eventFilter;
 
-            return matchesSearch && matchesAssignee && matchesEvent;
+            const matchesPackage =
+                packageFilter === "ALL" || String(card.order_node?.package_id) === packageFilter;
+
+            return matchesSearch && matchesAssignee && matchesEvent && matchesPackage;
         });
-    }, [cards, searchQuery, assigneeFilter, eventFilter]);
+    }, [cards, searchQuery, assigneeFilter, eventFilter, packageFilter]);
 
     // 스테이지별 카드 분류 (필터링 적용됨)
     const columns = useMemo(() => {
@@ -119,11 +136,61 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
         return cards.find((c) => c.id.toString() === activeId);
     }, [cards, activeId]);
 
+    // --- Selection Handlers ---
+    const toggleSelection = (id: number) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkMove = async (stage: PipelineStage) => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Move ${selectedIds.length} cards to ${stage}?`)) return;
+
+        try {
+            const result = await updateCardsStage(selectedIds, stage);
+            if (result.success > 0) {
+                toast.success(`Moved ${result.success} cards to ${stage}`);
+            }
+            if (result.failed > 0) {
+                toast.error(`Failed to move ${result.failed} cards`);
+                console.error("Errors:", result.errors);
+            }
+            setSelectedIds([]);
+            setSelectionMode(false);
+            router.refresh();
+        } catch (e) {
+            toast.error("Bulk move failed");
+        }
+    };
+
+    const handleBulkAssign = async (workerId: string) => {
+        if (selectedIds.length === 0) return;
+        const worker = workerId === "unassigned" ? null : workerId;
+        const workerName = worker ? editors.find(e => e.id === worker)?.name : "Unassigned";
+
+        if (!confirm(`Assign ${selectedIds.length} cards to ${workerName}?`)) return;
+
+        try {
+            await updateCardsAssignee(selectedIds, worker);
+            toast.success(`Assigned ${selectedIds.length} cards to ${workerName}`);
+            setSelectedIds([]);
+            setSelectionMode(false);
+            router.refresh();
+        } catch (e) {
+            toast.error("Bulk assign failed");
+        }
+    };
+
     // --- Event Handlers ---
 
     const handleCardClick = (card: PipelineCardWithDetails) => {
-        setSelectedCard(card);
-        setIsModalOpen(true);
+        if (selectionMode) {
+            toggleSelection(card.id);
+        } else {
+            setSelectedCard(card);
+            setIsModalOpen(true);
+        }
     };
 
     const handleModalClose = () => {
@@ -134,6 +201,9 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
     // --- DND Handlers ---
 
     const handleDragStart = (event: DragStartEvent) => {
+        // Disable drag in selection mode
+        if (selectionMode) return;
+
         const id = event.active.id.toString();
         setActiveId(id);
         const card = cards.find((c) => c.id.toString() === id);
@@ -279,24 +349,82 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
                 ${isFullscreen ? 'bg-zinc-950/95 pt-6' : 'bg-zinc-950/80'}
             `}>
                 <KanbanFilters
-                    filters={{ query: searchQuery, assigneeId: assigneeFilter, eventId: eventFilter }}
+                    filters={{ query: searchQuery, assigneeId: assigneeFilter, eventId: eventFilter, packageId: packageFilter }}
                     onFilterChange={(updates) => {
                         if (updates.query !== undefined) setSearchQuery(updates.query);
                         if (updates.assigneeId !== undefined) setAssigneeFilter(updates.assigneeId);
                         if (updates.eventId !== undefined) setEventFilter(updates.eventId);
+                        if (updates.packageId !== undefined) setPackageFilter(updates.packageId);
                     }}
                     events={events}
                     assignees={editors}
+                    packages={packages}
                 />
 
-                <button
-                    onClick={() => setIsFullscreen(!isFullscreen)}
-                    className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
-                    title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-                >
-                    {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setSelectionMode(!selectionMode)}
+                        className={`
+                            flex items-center gap-2 px-3 py-2 rounded-lg border transition-all
+                            ${selectionMode
+                                ? 'bg-red-900/20 border-red-900/50 text-red-200'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}
+                        `}
+                    >
+                        <CheckSquare className="w-4 h-4" />
+                        <span className="text-xs font-bold">{selectionMode ? 'CANCEL SELECTION' : 'SELECT CARDS'}</span>
+                    </button>
+
+                    <button
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                        title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                    >
+                        {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                    </button>
+                </div>
             </div>
+
+            {/* Bulk Action Bar (Floating) */}
+            {selectionMode && selectedIds.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-2 bg-zinc-900/90 backdrop-blur-md border border-zinc-700 rounded-xl shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                    <div className="px-3 border-r border-zinc-700 text-sm font-bold text-zinc-200">
+                        {selectedIds.length} SELECTED
+                    </div>
+
+                    {/* Bulk Assign */}
+                    <Select onValueChange={(val) => handleBulkAssign(val)}>
+                        <SelectTrigger className="h-9 w-[140px] bg-zinc-800 border-zinc-700 text-xs">
+                            <SelectValue placeholder="ASSIGN WORKER" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="unassigned">UNASSIGN</SelectItem>
+                            {editors.map(e => (
+                                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    {/* Bulk Move */}
+                    <Select onValueChange={(val) => handleBulkMove(val as PipelineStage)}>
+                        <SelectTrigger className="h-9 w-[140px] bg-zinc-800 border-zinc-700 text-xs">
+                            <SelectValue placeholder="MOVE TO STAGE" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {STAGES.map(s => (
+                                <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <button
+                        onClick={() => setSelectedIds([])}
+                        className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-200"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Board Area */}
             <div className={`
@@ -330,6 +458,9 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
                                 color={stage.color}
                                 cards={columns[stage.id]}
                                 onCardClick={handleCardClick}
+                                selectionMode={selectionMode}
+                                selectedIds={selectedIds}
+                                onToggleSelect={toggleSelection}
                             />
                         ))}
                     </div>

@@ -41,12 +41,14 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
         const orderId = item.card?.order?.id?.toString() || "";
         const customerName = item.card?.order?.user?.name?.toLowerCase() || "";
         const packageName = item.card?.order?.package?.name?.toLowerCase() || "";
+        const discipline = item.card?.order?.discipline?.toLowerCase() || "";
         const query = searchQuery.toLowerCase();
 
         return (
             orderId.includes(query) ||
             customerName.includes(query) ||
-            packageName.includes(query)
+            packageName.includes(query) ||
+            discipline.includes(query)
         );
     });
 
@@ -105,7 +107,7 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
                     <Input
-                        placeholder="Search order, customer, or package..."
+                        placeholder="Search order, customer, package, or discipline..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9 bg-zinc-950 border-zinc-700 text-zinc-100"
@@ -160,13 +162,23 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
                                         #{item.card?.order?.id}
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex flex-col">
+                                        <div className="flex flex-col gap-1">
                                             <span className="text-sm font-medium text-zinc-200">
                                                 {item.card?.order?.user?.name || "Unknown"}
                                             </span>
-                                            <span className="text-xs text-zinc-500">
-                                                {item.card?.order?.user?.email || ""}
-                                            </span>
+                                            <div className="flex flex-col text-xs text-zinc-500 gap-0.5">
+                                                <span>{item.card?.order?.user?.email || ""}</span>
+                                                {item.card?.order?.user?.phone && (
+                                                    <span className="text-zinc-400 font-mono">
+                                                        📞 {item.card?.order?.user?.phone}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {item.card?.order?.discipline && (
+                                                <Badge variant="outline" className="w-fit mt-1 border-blue-900/30 bg-blue-900/10 text-blue-400 text-[10px]">
+                                                    {item.card?.order?.discipline}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell>

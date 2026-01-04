@@ -18,8 +18,9 @@ export async function upsertSetting(key: string, value: string) {
 
         if (error) throw error;
 
-        revalidatePath("/showcase");
-        revalidatePath("/admin/showcase");
+
+
+        revalidatePath("/", "layout");
         return { success: true };
     } catch (e: any) {
         console.error("Failed to upsert setting:", e);
@@ -37,4 +38,23 @@ export async function getSetting(key: string) {
 
     if (error) return null;
     return data.value;
+}
+
+export async function getSettings(keys: string[]) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("general_settings")
+        .select("key, value")
+        .in("key", keys);
+
+    if (error) {
+        console.error("Error fetching settings:", error);
+        return {};
+    }
+
+    const settings: Record<string, string> = {};
+    data?.forEach((item) => {
+        settings[item.key] = item.value;
+    });
+    return settings;
 }

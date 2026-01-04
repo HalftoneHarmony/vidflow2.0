@@ -92,6 +92,23 @@ export function TaskDetailModal({ card, isOpen, onClose, availableWorkers }: Tas
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
                         {activeTab === "INFO" && (
                             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+                                {/* Order Overview */}
+                                <div className="bg-zinc-900/50 p-4 rounded border border-zinc-800 space-y-3">
+                                    <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Order Details</h4>
+                                    <div className="flex justify-between items-center border-b border-zinc-800/50 pb-2">
+                                        <span className="text-xs text-zinc-500">Package</span>
+                                        <span className="text-sm font-bold text-zinc-200">{card.order_node?.package_node?.name}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center border-b border-zinc-800/50 pb-2">
+                                        <span className="text-xs text-zinc-500">Participant</span>
+                                        <span className="text-sm text-zinc-200">{card.order_node?.user_node?.name}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs text-zinc-500">Discipline</span>
+                                        <span className="text-sm font-mono text-zinc-200">{(card.order_node as any).discipline || "-"}</span>
+                                    </div>
+                                </div>
+
                                 {/* Status & Timing */}
                                 <div className="grid grid-cols-2 gap-4 text-sm bg-zinc-900/50 p-4 rounded border border-zinc-800">
                                     <div className="space-y-1">

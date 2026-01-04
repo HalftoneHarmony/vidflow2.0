@@ -10,9 +10,10 @@
 INSERT INTO public.events (id, title, event_date, location, is_active, thumbnail_url)
 VALUES 
   (1, '2026 NPCA Seoul', '2026-04-15', 'Seoul Olympic Park', true, 'https://placehold.co/600x400/000000/FFFFFF?text=NPCA+Seoul'),
-  (2, '2025 NPCA Busan', '2025-11-20', 'Busan BEXCO', false, 'https://placehold.co/600x400/000000/FFFFFF?text=NPCA+Busan')
+  (2, '2025 NPCA Busan', '2025-11-20', 'Busan BEXCO', false, 'https://placehold.co/600x400/000000/FFFFFF?text=NPCA+Busan'),
+  (3, '2025 NPCA Winter Classic', '2025-12-20', 'Seoul Convention Center', true, 'https://placehold.co/600x400/000000/FFFFFF?text=Winter+Classic')
 ON CONFLICT (id) DO UPDATE 
-SET title = EXCLUDED.title, is_active = EXCLUDED.is_active;
+SET title = EXCLUDED.title, is_active = EXCLUDED.is_active, event_date = EXCLUDED.event_date;
 
 -- 3. PACKAGES (패키지 상품)
 INSERT INTO public.packages (event_id, name, price, description, composition, is_sold_out)
