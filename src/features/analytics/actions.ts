@@ -131,7 +131,10 @@ export async function getEventAnalytics(): Promise<EventAnalyticsData[]> {
         }, {});
 
         return {
-            ...event,
+            event_id: event.event_id,
+            event_title: event.title, // DB의 'title'을 프론트엔드가 기대하는 'event_title'로 매핑
+            event_date: event.event_date,
+            total_revenue: Number(event.gross_revenue || 0), // DB에서는 gross_revenue로 반환
             gross_revenue: Number(event.gross_revenue || 0),
             net_profit: Number(event.net_profit || 0),
             total_expenses: Number(event.total_expenses || 0),
