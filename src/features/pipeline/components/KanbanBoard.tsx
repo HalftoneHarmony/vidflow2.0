@@ -26,6 +26,7 @@ import { updateCardStage } from "../actions";
 import { updateCardsStage, updateCardsAssignee } from "../bulk-actions";
 import { verifyLink } from "@/features/delivery/actions";
 import { KanbanFilters, PipelineFiltersState } from "./KanbanFilters";
+import { PipelineStageConfig } from "../config";
 import {
     Select,
     SelectContent,
@@ -41,18 +42,12 @@ interface KanbanBoardProps {
     packages: { id: number; name: string }[];
     events: { id: number; title: string }[];
     editors: { id: string; name: string; email: string; commission_rate: number | null }[];
+    stages: PipelineStageConfig[];
 }
 
-const STAGES: { id: PipelineStage; title: string; color: string }[] = [
-    { id: "WAITING", title: "Waiting", color: "zinc" },
-    { id: "EDITING", title: "Editing", color: "purple" },
-    { id: "READY", title: "Ready", color: "orange" },
-    { id: "DELIVERED", title: "Delivered", color: "green" },
-];
 
 
-
-export function KanbanBoard({ initialCards, users, packages, events, editors }: KanbanBoardProps) {
+export function KanbanBoard({ initialCards, users, packages, events, editors, stages }: KanbanBoardProps) {
     const router = useRouter();
     const [cards, setCards] = useState<PipelineCardWithDetails[]>(initialCards);
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -116,10 +111,10 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
 
     // 스테이지별 카드 분류 (필터링 적용됨)
     const columns = useMemo(() => {
-        const cols = STAGES.reduce((acc, stage) => {
-            acc[stage.id] = [];
+        const cols = stages.reduce((acc: Record<string, PipelineCardWithDetails[]>, stage) => {
+            acc[stage.code] = [];
             return acc;
-        }, {} as Record<PipelineStage, PipelineCardWithDetails[]>);
+        }, {} as Record<string, PipelineCardWithDetails[]>);
 
         filteredCards.forEach((card) => {
             if (cols[card.stage]) {
@@ -130,7 +125,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
             }
         });
         return cols;
-    }, [filteredCards]);
+    }, [filteredCards, stages]);
 
     // 활성 카드 객체 (DragOverlay용)
     const activeCard = useMemo(() => {
@@ -278,7 +273,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
         }
 
         // 2. 컬럼 위로 드래그 시 (빈 공간 등)
-        const isOverColumn = STAGES.some((s) => s.id === overIdStr);
+        const isOverColumn = stages.some((s: PipelineStageConfig) => s.code === overIdStr);
         if (isActiveTask && isOverColumn) {
             setCards((prev) => {
                 const activeIndex = prev.findIndex((c) => c.id.toString() === activeIdStr);
@@ -311,7 +306,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
         // 최종 목적지가 어떤 스테이지인지 판단
         let newStage: PipelineStage | null = null;
 
-        if (STAGES.some((s) => s.id === overIdStr)) {
+        if (stages.some((s: PipelineStageConfig) => s.code === overIdStr)) {
             newStage = overIdStr as PipelineStage;
         } else {
             // Task 위에 드롭된 경우, 해당 Task의 스테이지를 따름
@@ -444,8 +439,8 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
                             <SelectValue placeholder="MOVE TO STAGE" />
                         </SelectTrigger>
                         <SelectContent>
-                            {STAGES.map(s => (
-                                <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                            {stages.map((s: PipelineStageConfig) => (
+                                <SelectItem key={s.code} value={s.code}>{s.title}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -483,13 +478,13 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
                     onDragEnd={handleDragEnd}
                 >
                     <div className="flex h-full gap-4 px-4 pb-6 w-full">
-                        {STAGES.map((stage) => (
+                        {stages.map((stage: PipelineStageConfig) => (
                             <StageColumn
-                                key={stage.id}
-                                stage={stage.id}
+                                key={stage.code}
+                                stage={stage.code as PipelineStage}
                                 title={stage.title}
                                 color={stage.color}
-                                cards={columns[stage.id]}
+                                cards={columns[stage.code] || []}
                                 onCardClick={handleCardClick}
                                 selectionMode={selectionMode}
                                 selectedIds={selectedIds}
