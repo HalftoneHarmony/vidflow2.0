@@ -8,6 +8,8 @@ import {
     getCustomerLTV,
     getPipelineBottleneck,
     getEventAnalytics,
+    getDisciplineAnalytics,
+    getPackageAnalytics,
 } from "@/features/analytics/actions";
 import { getAllEventsProfitSummary } from "@/features/finance/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -39,6 +41,8 @@ export default async function AnalyticsPage() {
         customerLTV,
         pipelineBottleneck,
         eventAnalytics,
+        disciplineAnalytics,
+        packageAnalytics,
     ] = await Promise.all([
         getDailyRevenue(30),
         getMonthlyGrowth(),
@@ -46,6 +50,8 @@ export default async function AnalyticsPage() {
         getCustomerLTV(20),
         getPipelineBottleneck(),
         getEventAnalytics(),
+        getDisciplineAnalytics(),
+        getPackageAnalytics(),
     ]);
 
     // 2. Fetch Finance Data (from FinancePage)
@@ -142,6 +148,8 @@ export default async function AnalyticsPage() {
                 customerLTV={customerLTV}
                 pipelineBottleneck={pipelineBottleneck}
                 eventAnalytics={eventAnalytics}
+                disciplineAnalytics={disciplineAnalytics}
+                packageAnalytics={packageAnalytics}
 
                 // Finance Props
                 financeEvents={financeEvents}

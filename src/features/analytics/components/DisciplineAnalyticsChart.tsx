@@ -248,8 +248,8 @@ export function DisciplineAnalyticsChart({ disciplineData, packageData }: Props)
                     <button
                         onClick={() => setActiveTab("discipline")}
                         className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === "discipline"
-                                ? "bg-blue-600 text-white shadow-lg"
-                                : "text-zinc-500 hover:text-zinc-300"
+                            ? "bg-blue-600 text-white shadow-lg"
+                            : "text-zinc-500 hover:text-zinc-300"
                             }`}
                     >
                         <Medal className="w-3.5 h-3.5" />
@@ -258,8 +258,8 @@ export function DisciplineAnalyticsChart({ disciplineData, packageData }: Props)
                     <button
                         onClick={() => setActiveTab("package")}
                         className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === "package"
-                                ? "bg-blue-600 text-white shadow-lg"
-                                : "text-zinc-500 hover:text-zinc-300"
+                            ? "bg-blue-600 text-white shadow-lg"
+                            : "text-zinc-500 hover:text-zinc-300"
                             }`}
                     >
                         <Package className="w-3.5 h-3.5" />
@@ -343,10 +343,13 @@ export function DisciplineAnalyticsChart({ disciplineData, packageData }: Props)
                                                 borderRadius: '8px'
                                             }}
                                             itemStyle={{ color: '#e4e4e7', fontSize: '12px' }}
-                                            formatter={(value: number, name: string) => [
-                                                name === 'value' ? `${value}건` : `₩${formatCurrency(value)}`,
-                                                name === 'value' ? '신청 수' : '매출'
-                                            ]}
+                                            formatter={(value, name) => {
+                                                const numValue = Number(value) || 0;
+                                                return [
+                                                    name === 'value' ? `${numValue}건` : `₩${formatCurrency(numValue)}`,
+                                                    name === 'value' ? '신청 수' : '매출'
+                                                ];
+                                            }}
                                         />
                                         <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={16}>
                                             {chartData.map((entry, index) => (

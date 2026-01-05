@@ -16,6 +16,8 @@ import {
 
 // Components
 import { EventComparisonChart, EventAnalyticsData } from "./EventComparisonChart";
+import { BottleneckFunnelChart } from "./BottleneckFunnelChart";
+import { DisciplineAnalyticsChart, DisciplineStats, PackageStats } from "./DisciplineAnalyticsChart";
 import { ExpenseDetailSection } from "@/features/finance/components/ExpenseDetailSection";
 import { CostBreakdownChart } from "@/features/finance/components/FinanceCharts";
 import { MotionCard } from "@/components/ui/motion-card";
@@ -36,6 +38,8 @@ type Props = {
     customerLTV: CustomerLTV[];
     pipelineBottleneck: any;
     eventAnalytics: EventAnalyticsData[];
+    disciplineAnalytics: DisciplineStats[];
+    packageAnalytics: PackageStats[];
     financeEvents: any[];
     eventList: any[];
     allExpenses: any[];
@@ -181,7 +185,10 @@ const PackageDistributionChart = ({ data, type }: { data: { name: string; value:
 export function AnalyticsDashboard({
     monthlyGrowth,
     customerLTV,
+    pipelineBottleneck,
     eventAnalytics,
+    disciplineAnalytics,
+    packageAnalytics,
     allExpenses,
     eventList,
     totalStats,
@@ -414,7 +421,23 @@ export function AnalyticsDashboard({
                 </div>
             </MotionCard>
 
-            {/* 4. Footer Expense Management (Collapsed) */}
+            {/* 4. Pipeline Bottleneck & Discipline Analytics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Bottleneck Funnel */}
+                <MotionCard delay={0.6} className="p-0 border-none bg-transparent" hoverEffect={false}>
+                    <BottleneckFunnelChart data={pipelineBottleneck} />
+                </MotionCard>
+
+                {/* Discipline Analytics */}
+                <MotionCard delay={0.7} className="p-0 border-none bg-transparent" hoverEffect={false}>
+                    <DisciplineAnalyticsChart
+                        disciplineData={disciplineAnalytics}
+                        packageData={packageAnalytics}
+                    />
+                </MotionCard>
+            </div>
+
+            {/* 5. Footer Expense Management (Collapsed) */}
             <div className="pt-8 border-t border-zinc-800">
                 <button
                     onClick={() => setShowExpenseTable(!showExpenseTable)}
