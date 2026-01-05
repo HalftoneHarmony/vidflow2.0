@@ -13,11 +13,12 @@ interface MyPageClientProps {
     profile: any;
     orders: any[];
     inquiries: any[];
+    preferences: any;
 }
 
 type Tab = "orders" | "profile" | "inquiries";
 
-export function MyPageClient({ user, profile, orders, inquiries }: MyPageClientProps) {
+export function MyPageClient({ user, profile, orders, inquiries, preferences }: MyPageClientProps) {
     const [activeTab, setActiveTab] = useState<Tab>("orders");
     const router = useRouter();
     const supabase = createClient();
@@ -68,8 +69,8 @@ export function MyPageClient({ user, profile, orders, inquiries }: MyPageClientP
                     <button
                         onClick={() => setActiveTab("orders")}
                         className={`flex items-center gap-2 px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "orders"
-                                ? "border-red-500 text-white"
-                                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                            ? "border-red-500 text-white"
+                            : "border-transparent text-zinc-500 hover:text-zinc-300"
                             }`}
                     >
                         <ShoppingBag className="w-4 h-4" />
@@ -78,8 +79,8 @@ export function MyPageClient({ user, profile, orders, inquiries }: MyPageClientP
                     <button
                         onClick={() => setActiveTab("inquiries")}
                         className={`flex items-center gap-2 px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "inquiries"
-                                ? "border-red-500 text-white"
-                                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                            ? "border-red-500 text-white"
+                            : "border-transparent text-zinc-500 hover:text-zinc-300"
                             }`}
                     >
                         <MessageSquare className="w-4 h-4" />
@@ -88,8 +89,8 @@ export function MyPageClient({ user, profile, orders, inquiries }: MyPageClientP
                     <button
                         onClick={() => setActiveTab("profile")}
                         className={`flex items-center gap-2 px-6 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === "profile"
-                                ? "border-red-500 text-white"
-                                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                            ? "border-red-500 text-white"
+                            : "border-transparent text-zinc-500 hover:text-zinc-300"
                             }`}
                     >
                         <User className="w-4 h-4" />
@@ -125,7 +126,7 @@ export function MyPageClient({ user, profile, orders, inquiries }: MyPageClientP
                                 <span className="w-1.5 h-6 bg-red-500 rounded-sm"></span>
                                 계정 정보
                             </h2>
-                            <UserProfileView profile={profile} email={user.email} />
+                            <UserProfileView profile={profile} user={user} preferences={preferences} />
                         </div>
                     )}
                 </div>

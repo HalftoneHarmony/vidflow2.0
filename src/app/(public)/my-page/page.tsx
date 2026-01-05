@@ -18,10 +18,11 @@ export default async function MyPage() {
     }
 
     // 2. 데이터 병렬 로딩
-    const [orders, profile, inquiries] = await Promise.all([
+    const [orders, profile, inquiries, preferences] = await Promise.all([
         getUserOrders(user.id),
         getUserProfile(user.id),
-        getUserInquiries(user.id)
+        getUserInquiries(user.id),
+        import("@/features/users/actions").then(m => m.getUserPreferences(user.id))
     ]);
 
     return (
@@ -30,6 +31,7 @@ export default async function MyPage() {
             profile={profile}
             orders={orders}
             inquiries={inquiries}
+            preferences={preferences}
         />
     );
 }

@@ -14,7 +14,7 @@ interface StageColumnProps {
     onCardClick?: (card: PipelineCardWithDetails) => void;
     selectionMode?: boolean;
     selectedIds?: number[];
-    onToggleSelect?: (id: number) => void;
+    onToggleSelect?: (id: number, isShift: boolean) => void;
 }
 
 export function StageColumn({ stage, title, cards, color, onCardClick, selectionMode, selectedIds, onToggleSelect }: StageColumnProps) {

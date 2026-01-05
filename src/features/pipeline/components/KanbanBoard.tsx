@@ -62,6 +62,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
     // Selection Mode
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [anchorId, setAnchorId] = useState<number | null>(null);
 
     // 상세 모달 상태
     const [selectedCard, setSelectedCard] = useState<PipelineCardWithDetails | null>(null);
@@ -137,10 +138,39 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
     }, [cards, activeId]);
 
     // --- Selection Handlers ---
-    const toggleSelection = (id: number) => {
-        setSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]
-        );
+    const toggleSelection = (id: number, isShift?: boolean) => {
+        const clickedCard = cards.find(c => c.id === id);
+        const anchorCard = anchorId ? cards.find(c => c.id === anchorId) : null;
+
+        if (isShift && anchorId !== null && clickedCard && anchorCard && clickedCard.stage === anchorCard.stage) {
+            // Range Selection: Replace only the items in the current stage
+            const stageCards = filteredCards.filter(c => c.stage === clickedCard.stage);
+            const allVisibleIds = stageCards.map(c => c.id);
+
+            const currentIndex = allVisibleIds.indexOf(id);
+            const anchorIndex = allVisibleIds.indexOf(anchorId);
+
+            if (currentIndex !== -1 && anchorIndex !== -1) {
+                const start = Math.min(currentIndex, anchorIndex);
+                const end = Math.max(currentIndex, anchorIndex);
+                const idsInRange = allVisibleIds.slice(start, end + 1);
+
+                setSelectedIds(prev => {
+                    // Keep IDs from other stages, replace IDs in this stage
+                    const otherStageIds = prev.filter(pid => {
+                        const card = cards.find(c => c.id === pid);
+                        return !card || card.stage !== clickedCard.stage;
+                    });
+                    return [...otherStageIds, ...idsInRange];
+                });
+            }
+        } else {
+            // Normal Toggle: Set as new anchor
+            setSelectedIds(prev =>
+                prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]
+            );
+            setAnchorId(id);
+        }
     };
 
     const handleBulkMove = async (stage: PipelineStage) => {
@@ -186,7 +216,9 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
 
     const handleCardClick = (card: PipelineCardWithDetails) => {
         if (selectionMode) {
-            toggleSelection(card.id);
+            toggleSelection(card.id, false); // Click on card without shift if not specified? 
+            // Wait, card click might also want shift but usually users click the checkbox for range.
+            // If they click the card body in selection mode, let's treat it as a normal toggle.
         } else {
             setSelectedCard(card);
             setIsModalOpen(true);
@@ -331,7 +363,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
         <div className="flex flex-col h-full gap-4">
             {/* Bottleneck Warning Banner */}
             {bottleneckCount > 0 && (
-                <div className="bg-red-950/40 border-l-4 border-red-600 p-3 mx-4 mt-2 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                <div className="bg-red-950/40 border-l-4 border-red-600 p-3 mx-4 mt-2 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center gap-3">
                         <div className="p-1.5 bg-red-600/20 rounded-full animate-pulse">
                             <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -343,8 +375,9 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
                 </div>
             )}
             {/* Toolbar: Heavy Metal Style */}
+            {/* Toolbar: Heavy Metal Style */}
             <div className={`
-                flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 
+                flex flex-col xl:flex-row items-stretch xl:items-center justify-start gap-4 px-6 py-4 
                 backdrop-blur-md border-b border-zinc-900 sticky top-0 z-40 transition-all duration-300
                 ${isFullscreen ? 'bg-zinc-950/95 pt-6' : 'bg-zinc-950/80'}
             `}>
@@ -361,23 +394,23 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
                     packages={packages}
                 />
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0 self-end xl:self-auto">
                     <button
                         onClick={() => setSelectionMode(!selectionMode)}
                         className={`
-                            flex items-center gap-2 px-3 py-2 rounded-lg border transition-all
+                            flex items-center gap-2 h-10 px-3 rounded-lg border transition-all shrink-0
                             ${selectionMode
                                 ? 'bg-red-900/20 border-red-900/50 text-red-200'
                                 : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}
                         `}
                     >
                         <CheckSquare className="w-4 h-4" />
-                        <span className="text-xs font-bold">{selectionMode ? 'CANCEL SELECTION' : 'SELECT CARDS'}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{selectionMode ? 'CANCEL selection' : 'SELECT cards'}</span>
                     </button>
 
                     <button
                         onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                        className="h-10 w-10 flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors shrink-0"
                         title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                     >
                         {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
@@ -387,7 +420,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors }: 
 
             {/* Bulk Action Bar (Floating) */}
             {selectionMode && selectedIds.length > 0 && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-2 bg-zinc-900/90 backdrop-blur-md border border-zinc-700 rounded-xl shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-wrap items-center justify-center gap-2 p-3 bg-zinc-900/90 backdrop-blur-md border border-zinc-700 rounded-xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 max-w-[95vw]">
                     <div className="px-3 border-r border-zinc-700 text-sm font-bold text-zinc-200">
                         {selectedIds.length} SELECTED
                     </div>

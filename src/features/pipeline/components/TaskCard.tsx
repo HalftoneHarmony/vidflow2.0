@@ -10,7 +10,7 @@ interface TaskCardProps {
     onClick?: (card: PipelineCardWithDetails) => void;
     isOverlay?: boolean;
     isSelected?: boolean;
-    onToggleSelect?: (id: number) => void;
+    onToggleSelect?: (id: number, isShift: boolean) => void;
     selectionMode?: boolean;
 }
 
@@ -143,7 +143,7 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
     const handleClick = (e: React.MouseEvent) => {
         if (selectionMode && onToggleSelect) {
             e.stopPropagation();
-            onToggleSelect(card.id);
+            onToggleSelect(card.id, e.shiftKey);
             return;
         }
         if (!isDragging && !isOverlay && onClick) {
@@ -153,7 +153,7 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
 
     const handleSelectClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        onToggleSelect?.(card.id);
+        onToggleSelect?.(card.id, e.shiftKey);
     };
 
     return (

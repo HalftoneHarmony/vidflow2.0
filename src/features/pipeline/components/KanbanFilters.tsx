@@ -25,29 +25,30 @@ interface KanbanFiltersProps {
 
 export function KanbanFilters({ filters, onFilterChange, events, assignees, packages }: KanbanFiltersProps) {
     return (
-        <div className="flex flex-col sm:flex-row gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-800/50 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-zinc-900/50 p-2 rounded-lg border border-zinc-800/50 shadow-sm backdrop-blur-sm w-full lg:w-auto flex-1 min-w-0">
             {/* Search */}
-            <div className="relative flex-grow">
+            <div className="relative flex-grow min-w-[180px] max-w-full sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 z-10" />
                 <Input
-                    className="w-full h-10 bg-zinc-950 border-zinc-800 focus-visible:ring-red-900/50 pl-9 text-xs mb-1 sm:mb-0"
+                    className="w-full h-10 bg-zinc-950 border-zinc-800 focus-visible:ring-red-900/50 pl-9 text-xs"
                     placeholder="SEARCH ORDER..."
                     value={filters.query}
                     onChange={(e) => onFilterChange({ query: e.target.value })}
                 />
             </div>
 
-            <div className="flex flex-wrap gap-2 shrink-0">
+            {/* Filters Group */}
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 {/* Event Filter */}
-                <div className="w-[160px]">
+                <div className="flex-1 sm:flex-none sm:w-[140px] min-w-[120px]">
                     <Select
                         value={filters.eventId}
                         onValueChange={(value) => onFilterChange({ eventId: value })}
                     >
-                        <SelectTrigger className="h-10 bg-zinc-950 border-zinc-800 text-xs font-bold uppercase tracking-wide text-zinc-400 focus:ring-red-900/50">
-                            <div className="flex items-center gap-2 truncate">
-                                <Calendar className="h-3.5 w-3.5 text-zinc-500" />
-                                <SelectValue placeholder="FILTER EVENT" />
+                        <SelectTrigger className="h-10 bg-zinc-950 border-zinc-800 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-zinc-400 focus:ring-red-900/50">
+                            <div className="flex items-center gap-1.5 truncate">
+                                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-zinc-500 shrink-0" />
+                                <SelectValue placeholder="EVENT" />
                             </div>
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-950 border-zinc-800">
@@ -62,15 +63,15 @@ export function KanbanFilters({ filters, onFilterChange, events, assignees, pack
                 </div>
 
                 {/* Package Filter */}
-                <div className="w-[160px]">
+                <div className="flex-1 sm:flex-none sm:w-[140px] min-w-[120px]">
                     <Select
                         value={filters.packageId}
                         onValueChange={(value) => onFilterChange({ packageId: value })}
                     >
-                        <SelectTrigger className="h-10 bg-zinc-950 border-zinc-800 text-xs font-bold uppercase tracking-wide text-zinc-400 focus:ring-red-900/50">
-                            <div className="flex items-center gap-2 truncate">
-                                <Box className="h-3.5 w-3.5 text-zinc-500" />
-                                <SelectValue placeholder="FILTER PACKAGE" />
+                        <SelectTrigger className="h-10 bg-zinc-950 border-zinc-800 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-zinc-400 focus:ring-red-900/50">
+                            <div className="flex items-center gap-1.5 truncate">
+                                <Box className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-zinc-500 shrink-0" />
+                                <SelectValue placeholder="PACKAGE" />
                             </div>
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-950 border-zinc-800">
@@ -85,14 +86,14 @@ export function KanbanFilters({ filters, onFilterChange, events, assignees, pack
                 </div>
 
                 {/* Assignee Filter */}
-                <div className="w-[160px]">
+                <div className="flex-1 sm:flex-none sm:w-[140px] min-w-[120px]">
                     <Select
                         value={filters.assigneeId}
                         onValueChange={(value) => onFilterChange({ assigneeId: value })}
                     >
-                        <SelectTrigger className="h-10 bg-zinc-950 border-zinc-800 text-xs font-bold uppercase tracking-wide text-zinc-400 focus:ring-red-900/50">
-                            <div className="flex items-center gap-2 truncate">
-                                <User className="h-3.5 w-3.5 text-zinc-500" />
+                        <SelectTrigger className="h-10 bg-zinc-950 border-zinc-800 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-zinc-400 focus:ring-red-900/50">
+                            <div className="flex items-center gap-1.5 truncate">
+                                <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-zinc-500 shrink-0" />
                                 <SelectValue placeholder="OPERATIVE" />
                             </div>
                         </SelectTrigger>

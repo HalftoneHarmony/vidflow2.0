@@ -32,6 +32,72 @@ export async function getUserProfile(userId: string) {
 }
 
 /**
+ * 사용자 환경설정 조회
+ */
+export async function getUserPreferences(userId: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("user_preferences")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+    if (error) {
+        // 데이터가 없는 경우 기본값 생성 시도
+        if (error.code === "PGRST116") {
+            const { data: newData, error: insertError } = await supabase
+                .from("user_preferences")
+                .insert({
+                    user_id: userId,
+                    email_notifications: true,
+                    sms_notifications: true,
+                    theme: "dark"
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                console.error("[Vulcan] Create user preferences error:", insertError.message);
+                return null;
+            }
+            return newData;
+        }
+        console.error("[Vulcan] Get user preferences error:", error.message);
+        return null;
+    }
+
+    return data;
+}
+
+/**
+ * 사용자 환경설정 업데이트
+ */
+export async function updateUserPreferences(
+    userId: string,
+    preferences: {
+        email_notifications?: boolean;
+        sms_notifications?: boolean;
+        theme?: string;
+    }
+) {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from("user_preferences")
+        .update(preferences)
+        .eq("user_id", userId);
+
+    if (error) {
+        console.error("[Vulcan] Update user preferences error:", error.message);
+        throw new Error(error.message);
+    }
+
+    revalidatePath("/my-page");
+    return { success: true };
+}
+
+
+/**
  * 사용자 역할 업데이트
  */
 export async function updateUserRole(userId: string, role: UserRole) {

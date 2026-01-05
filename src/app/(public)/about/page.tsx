@@ -1,50 +1,50 @@
-/**
- * 🤘 About Page
- * Information about VidFlow and its mission.
- */
-
-import { getSetting } from "@/features/settings/actions";
+import { getSettings } from "@/features/settings/actions";
+import { AboutClient, StatItem, ManifestoItem } from "./about-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function AboutPage() {
-    const pageTitle = await getSetting("about_title") || "ABOUT VIDFLOW";
-    const pageContent = await getSetting("about_content") || "VidFlow is the premier video production engine.";
+    const keys = [
+        "about_title",
+        "about_content",
+        "about_hero_subtitle",
+        "about_narrative_title",
+        "about_narrative_subtext",
+        "about_stats",
+        "about_manifesto_title",
+        "about_manifesto_items",
+        "about_cta_title",
+        "about_cta_desc"
+    ];
+
+    const settings = await getSettings(keys);
+
+    const title = settings.about_title || "ABOUT VIDFLOW";
+    const content = settings.about_content || "VidFlow is the premier video production engine dedicated to capturing the visceral energy of high-performance athletes and the stories that define their legacy.";
+
+    // Parse JSON settings safely
+    let stats: StatItem[] | undefined;
+    try {
+        if (settings.about_stats) stats = JSON.parse(settings.about_stats);
+    } catch (e) { console.error("Error parsing about_stats:", e); }
+
+    let manifestoItems: ManifestoItem[] | undefined;
+    try {
+        if (settings.about_manifesto_items) manifestoItems = JSON.parse(settings.about_manifesto_items);
+    } catch (e) { console.error("Error parsing about_manifesto_items:", e); }
 
     return (
-        <div className="min-h-screen bg-black text-white">
-            {/* Header Section */}
-            <section className="relative py-24 overflow-hidden border-b border-zinc-800">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black opacity-50" />
-                <div className="container relative mx-auto px-6 text-center">
-                    <h1 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter uppercase drop-shadow-xl animate-fade-up">
-                        {pageTitle}
-                    </h1>
-                    <div className="w-24 h-1 bg-red-600 mx-auto rounded-full" />
-                </div>
-            </section>
-
-            {/* Content Section */}
-            <section className="container mx-auto px-6 py-20">
-                <div className="max-w-4xl mx-auto">
-                    <div className="bg-zinc-900/30 border border-zinc-800 p-8 md:p-12 rounded-2xl backdrop-blur-sm shadow-2xl">
-                        <article className="prose prose-invert prose-lg max-w-none">
-                            <div className="whitespace-pre-wrap font-sans text-zinc-300 leading-relaxed text-lg md:text-xl">
-                                {pageContent}
-                            </div>
-                        </article>
-                    </div>
-
-                    {/* Footer decoration */}
-                    <div className="mt-16 flex justify-center opacity-50">
-                        <div className="flex items-center gap-4 text-zinc-600 font-mono text-sm uppercase tracking-widest">
-                            <span>Est. 2026</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-900"></span>
-                            <span>Engineered by Venom</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
+        <AboutClient
+            title={title}
+            content={content}
+            heroSubtitle={settings.about_hero_subtitle}
+            narrativeTitle={settings.about_narrative_title}
+            narrativeSubtext={settings.about_narrative_subtext}
+            stats={stats}
+            manifestoTitle={settings.about_manifesto_title}
+            manifestoItems={manifestoItems}
+            ctaTitle={settings.about_cta_title}
+            ctaDesc={settings.about_cta_desc}
+        />
     );
 }
