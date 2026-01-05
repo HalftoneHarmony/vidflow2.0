@@ -107,6 +107,29 @@ export function EventTable({ events }: EventTableProps) {
             ),
         },
         {
+            header: "Disciplines",
+            cell: (event) => (
+                <div className="flex flex-wrap gap-1 max-w-[200px]">
+                    {event.disciplines && event.disciplines.length > 0 ? (
+                        <>
+                            {event.disciplines.slice(0, 3).map((d) => (
+                                <Badge key={d} className="text-[10px] bg-zinc-800 text-zinc-300 border-0">
+                                    {d}
+                                </Badge>
+                            ))}
+                            {event.disciplines.length > 3 && (
+                                <Badge className="text-[10px] bg-zinc-700 text-zinc-400 border-0">
+                                    +{event.disciplines.length - 3}
+                                </Badge>
+                            )}
+                        </>
+                    ) : (
+                        <span className="text-xs text-zinc-600 italic">No disciplines</span>
+                    )}
+                </div>
+            ),
+        },
+        {
             header: "Actions",
             cell: (event) => (
                 <div className="flex items-center gap-2">

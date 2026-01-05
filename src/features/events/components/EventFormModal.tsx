@@ -113,14 +113,47 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                     {/* Disciplines */}
                     <div className="space-y-2">
                         <Label htmlFor="disciplines" className="text-zinc-400">Disciplines (Categories)</Label>
-                        <Input
-                            id="disciplines"
-                            value={disciplinesStr}
-                            onChange={(e) => setDisciplinesStr(e.target.value)}
-                            placeholder="e.g. Bodybuilding, Physique, Sport Model"
-                            className="bg-zinc-950 border-zinc-800 focus:border-red-500 text-white"
-                        />
-                        <p className="text-[10px] text-zinc-500">Comma separated values (e.g. GI, NO-GI)</p>
+                        <div className="flex flex-wrap gap-2 p-3 min-h-[60px] bg-zinc-950 border border-zinc-800 rounded-md">
+                            {disciplinesStr.split(",").map(s => s.trim()).filter(Boolean).map((discipline, idx) => (
+                                <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-red-500/20 border border-red-500/50 text-red-400 text-sm rounded"
+                                >
+                                    {discipline}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const arr = disciplinesStr.split(",").map(s => s.trim()).filter(Boolean);
+                                            arr.splice(idx, 1);
+                                            setDisciplinesStr(arr.join(", "));
+                                        }}
+                                        className="hover:text-red-300 ml-1"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                            <input
+                                type="text"
+                                placeholder="종목 입력 후 Enter"
+                                className="flex-1 min-w-[120px] bg-transparent text-white text-sm outline-none placeholder:text-zinc-600"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        const val = e.currentTarget.value.trim();
+                                        if (val) {
+                                            const arr = disciplinesStr.split(",").map(s => s.trim()).filter(Boolean);
+                                            if (!arr.includes(val)) {
+                                                arr.push(val);
+                                                setDisciplinesStr(arr.join(", "));
+                                            }
+                                            e.currentTarget.value = "";
+                                        }
+                                    }
+                                }}
+                            />
+                        </div>
+                        <p className="text-[10px] text-zinc-500">종목을 입력하고 Enter를 눌러 추가하세요 (예: Bodybuilding, Physique)</p>
                         <input
                             type="hidden"
                             name="disciplines"
