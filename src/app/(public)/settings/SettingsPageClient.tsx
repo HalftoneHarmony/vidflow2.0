@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { updateUserPreferences, type UserPreferences } from "@/features/admin/actions";
 import { toast } from "sonner";
+import { ChangePasswordCard } from "@/features/auth/components/ChangePasswordCard";
 
 interface SettingsPageClientProps {
     initialPreferences: UserPreferences | null;
@@ -291,6 +292,9 @@ export function SettingsPageClient({ initialPreferences, userEmail }: SettingsPa
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Password Change */}
+                <ChangePasswordCard />
             </div>
 
             {/* Save Button - Sticky */}

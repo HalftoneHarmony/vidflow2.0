@@ -9,10 +9,11 @@ interface PremiumInputProps extends React.ComponentProps<"input"> {
     description?: string;
     error?: string;
     success?: boolean;
+    icon?: React.ComponentType<{ className?: string }>;
 }
 
 export const PremiumInput = React.forwardRef<HTMLInputElement, PremiumInputProps>(
-    ({ className, label, description, error, success, ...props }, ref) => {
+    ({ className, label, description, error, success, icon: Icon, ...props }, ref) => {
         const [isFocused, setIsFocused] = React.useState(false);
 
         return (
@@ -44,6 +45,11 @@ export const PremiumInput = React.forwardRef<HTMLInputElement, PremiumInputProps
                         }}
                         transition={{ duration: 0.2 }}
                     />
+                    {Icon && (
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+                            <Icon className="w-4 h-4" />
+                        </div>
+                    )}
                     <Input
                         ref={ref}
                         {...props}
@@ -52,6 +58,7 @@ export const PremiumInput = React.forwardRef<HTMLInputElement, PremiumInputProps
                             "focus:border-transparent focus:ring-0", // Handled by motion div
                             error && "border-red-500 text-red-500",
                             success && "border-emerald-500 text-emerald-500",
+                            Icon && "pl-10",
                             className
                         )}
                         onFocus={(e) => {
