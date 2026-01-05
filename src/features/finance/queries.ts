@@ -42,11 +42,47 @@ export type PackageROI = {
 };
 
 // ============================================
-// Constants
+// Constants & Config
 // ============================================
 
-/** PG사 수수료율 (PortOne 기준 3.5%) */
-const PG_FEE_RATE = 0.035;
+/** 기본 PG사 수수료율 (PortOne 기준 3.5%) - DB 설정이 없을 경우 사용 */
+const DEFAULT_PG_FEE_RATE = 0.035;
+
+/** PG 수수료율 캐시 (서버 인스턴스 생명주기 동안 유지) */
+let cachedPgFeeRate: number | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5분 캐시
+
+/**
+ * DB에서 PG 수수료율을 조회합니다.
+ * 캐시를 사용하여 빈번한 DB 호출을 방지합니다.
+ */
+async function getPgFeeRate(): Promise<number> {
+    const now = Date.now();
+
+    // 캐시가 유효한 경우 캐시된 값 반환
+    if (cachedPgFeeRate !== null && (now - cacheTimestamp) < CACHE_TTL_MS) {
+        return cachedPgFeeRate;
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("general_settings")
+        .select("value")
+        .eq("key", "pg_fee_rate")
+        .single();
+
+    if (error || !data?.value) {
+        console.warn("[Finance] PG 수수료율 DB 조회 실패, 기본값 사용:", DEFAULT_PG_FEE_RATE);
+        cachedPgFeeRate = DEFAULT_PG_FEE_RATE;
+    } else {
+        const parsed = parseFloat(data.value);
+        cachedPgFeeRate = isNaN(parsed) ? DEFAULT_PG_FEE_RATE : parsed;
+    }
+
+    cacheTimestamp = now;
+    return cachedPgFeeRate;
+}
 
 // ============================================
 // Queries
@@ -58,6 +94,9 @@ const PG_FEE_RATE = 0.035;
  */
 export async function calculateNetProfit(eventId: number): Promise<ProfitSummary> {
     const supabase = await createClient();
+
+    // 0. PG 수수료율 조회 (DB 또는 캐시)
+    const pgFeeRate = await getPgFeeRate();
 
     // 1. 총 매출 조회 (PAID 상태만)
     const { data: orders, error: ordersError } = await supabase
@@ -73,8 +112,8 @@ export async function calculateNetProfit(eventId: number): Promise<ProfitSummary
 
     const totalRevenue = orders?.reduce((sum, order) => sum + (order.amount || 0), 0) ?? 0;
 
-    // 2. PG 수수료 계산 (3.5%)
-    const pgFees = Math.round(totalRevenue * PG_FEE_RATE);
+    // 2. PG 수수료 계산 (DB에서 조회한 수수료율 적용)
+    const pgFees = Math.round(totalRevenue * pgFeeRate);
 
     // 3. 지출 조회 (고정 지출 vs 자동 생성 인건비)
     const { data: expenses, error: expensesError } = await supabase
@@ -140,6 +179,7 @@ export async function getExpensesByEvent(eventId: number): Promise<Expense[]> {
  */
 export async function getPackageROI(packageId: number): Promise<PackageROI> {
     const supabase = await createClient();
+    const pgFeeRate = await getPgFeeRate();
 
     // 1. 패키지 정보 조회
     const { data: packageData, error: packageError } = await supabase
@@ -198,14 +238,14 @@ export async function getPackageROI(packageId: number): Promise<PackageROI> {
     const avgProcessTime = completedCount > 0 ? Math.round(totalProcessHours / completedCount) : 0;
 
     // 4. 수익률 및 효율성 계산
-    const pgFees = Math.round(totalRevenue * PG_FEE_RATE);
+    const pgFees = Math.round(totalRevenue * pgFeeRate);
     const profitMargin = totalRevenue > 0
         ? Math.round(((totalRevenue - pgFees) / totalRevenue) * 100)
         : 0;
 
     // 시간당 수익 (효율성 지표)
     const efficiency = avgProcessTime > 0
-        ? Math.round((packageData.price - (packageData.price * PG_FEE_RATE)) / avgProcessTime)
+        ? Math.round((packageData.price - (packageData.price * pgFeeRate)) / avgProcessTime)
         : 0;
 
     return {
@@ -340,7 +380,8 @@ export async function getEventDetailedAnalysis(eventId: number): Promise<EventDe
     const totalRevenue = orders?.reduce((acc, curr) => acc + (curr.amount || 0), 0) ?? 0;
 
     // Existing profit calc logic (reused partially)
-    const pgFees = Math.round(totalRevenue * PG_FEE_RATE);
+    const pgFeeRate = await getPgFeeRate();
+    const pgFees = Math.round(totalRevenue * pgFeeRate);
     const { data: expenses } = await supabase
         .from("expenses")
         .select("amount")

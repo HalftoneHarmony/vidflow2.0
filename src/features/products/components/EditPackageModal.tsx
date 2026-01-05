@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updatePackage } from "../actions";
 import { upsertShowcaseVideo } from "@/features/showcase/actions";
 import { Product } from "../queries";
+import { COMPOSITION_OPTIONS } from "../config";
 import { X } from "lucide-react";
 
 type EditPackageModalProps = {
@@ -11,8 +12,6 @@ type EditPackageModalProps = {
     eventsList: { id: number; title: string; event_date: string }[];
     onClose: () => void;
 };
-
-const COMPOSITION_OPTIONS = ["VIDEO", "PHOTO", "HIGHLIGHT", "RAW", "REELS", "DRONE", "INTERVIEW"];
 
 export function EditPackageModal({ pkg, eventsList, onClose }: EditPackageModalProps) {
     const [isLoading, setIsLoading] = useState(false);

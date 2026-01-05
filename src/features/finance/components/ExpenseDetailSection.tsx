@@ -8,6 +8,7 @@
 
 import { useState, useMemo } from "react";
 import { AddExpenseModal } from "./AddExpenseModal";
+import { EXPENSE_CATEGORY_OPTIONS } from "../config";
 
 type Expense = {
     id: number;
@@ -31,7 +32,6 @@ type ExpenseDetailSectionProps = {
 };
 
 const ITEMS_PER_PAGE = 20;
-const CATEGORY_OPTIONS = ["ALL", "LABOR", "FOOD", "TRAVEL", "EQUIPMENT", "ETC"];
 
 export function ExpenseDetailSection({ expenses, eventList }: ExpenseDetailSectionProps) {
     // 필터 상태
@@ -149,7 +149,7 @@ export function ExpenseDetailSection({ expenses, eventList }: ExpenseDetailSecti
                             }}
                             className="px-3 py-2 bg-black border border-zinc-700 text-white text-sm focus:border-red-600 focus:outline-none"
                         >
-                            {CATEGORY_OPTIONS.map((cat) => (
+                            {EXPENSE_CATEGORY_OPTIONS.map((cat) => (
                                 <option key={cat} value={cat}>
                                     {cat === "ALL" ? "All Categories" : cat}
                                 </option>

@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { createPackage } from "../actions";
+import { COMPOSITION_OPTIONS } from "../config";
 import { X } from "lucide-react";
 
 type CreatePackageModalProps = {
     eventsList: { id: number; title: string; event_date: string }[];
     onClose: () => void;
 };
-
-const COMPOSITION_OPTIONS = ["VIDEO", "PHOTO", "HIGHLIGHT", "RAW", "REELS", "DRONE", "INTERVIEW"];
 
 export function CreatePackageModal({ eventsList, onClose }: CreatePackageModalProps) {
     const [isLoading, setIsLoading] = useState(false);
