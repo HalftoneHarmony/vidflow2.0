@@ -14,6 +14,7 @@ export type Announcement = {
     type: "info" | "warning" | "promotion" | "maintenance" | "urgent";
     is_pinned: boolean;
     created_at: string;
+    expires_at?: string | null;
 };
 
 // 활성 공지사항 조회
@@ -22,7 +23,7 @@ export async function getActiveAnnouncements(): Promise<Announcement[]> {
 
     const { data, error } = await supabase
         .from("announcements")
-        .select("id, title, content, type, is_pinned, created_at")
+        .select("id, title, content, type, is_pinned, created_at, expires_at")
         .eq("is_active", true)
         .lte("starts_at", new Date().toISOString())
         .or("expires_at.is.null,expires_at.gt." + new Date().toISOString())
@@ -63,6 +64,42 @@ export async function createAnnouncement(data: {
 
     if (error) {
         console.error("Error creating announcement:", error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/admin");
+    return { success: true };
+}
+
+// 공지사항 수정 (관리자용)
+export async function updateAnnouncement(id: number, data: {
+    title?: string;
+    content?: string;
+    type?: string;
+    is_pinned?: boolean;
+    expires_at?: string | null;
+}) {
+    const supabase = await createClient();
+
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return { success: false, error: "Unauthorized" };
+
+    const updateData: any = {
+        title: data.title,
+        content: data.content,
+        is_pinned: data.is_pinned,
+        expires_at: data.expires_at,
+    };
+
+    if (data.type) updateData.type = data.type;
+
+    const { error } = await supabase
+        .from("announcements")
+        .update(updateData)
+        .eq("id", id);
+
+    if (error) {
+        console.error("Error updating announcement:", error);
         return { success: false, error: error.message };
     }
 

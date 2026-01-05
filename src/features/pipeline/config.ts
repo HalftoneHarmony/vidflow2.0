@@ -25,7 +25,7 @@ export type PipelineStageConfig = {
 export const DEFAULT_STAGES: PipelineStageConfig[] = [
     { id: 1, code: "WAITING", title: "Waiting", color: "zinc", sort_order: 1, is_active: true, is_terminal: false },
     { id: 2, code: "EDITING", title: "Editing", color: "blue", sort_order: 2, is_active: true, is_terminal: false },
-    { id: 3, code: "READY", title: "Ready", color: "emerald", sort_order: 3, is_active: true, is_terminal: false },
+    { id: 3, code: "READY", title: "Ready", color: "purple", sort_order: 3, is_active: true, is_terminal: false },
     { id: 4, code: "DELIVERED", title: "Delivered", color: "green", sort_order: 4, is_active: true, is_terminal: true },
 ];
 
@@ -66,7 +66,10 @@ export async function getPipelineStages(): Promise<PipelineStageConfig[]> {
             console.error("[Pipeline Config] DB 조회 실패, 기본값 사용:", error);
             cachedStages = DEFAULT_STAGES;
         } else {
-            cachedStages = data as PipelineStageConfig[];
+            cachedStages = (data as PipelineStageConfig[]).map(stage => ({
+                ...stage,
+                color: (stage.code === 'READY' && (stage.color === 'emerald' || stage.color === 'zinc')) ? 'purple' : stage.color
+            }));
         }
 
         cacheTimestamp = now;

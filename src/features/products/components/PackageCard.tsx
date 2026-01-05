@@ -57,14 +57,23 @@ export function PackageCard({ pkg, eventsList }: PackageCardProps) {
         <>
             <div className={`
                 group relative bg-zinc-900 border rounded-xl overflow-hidden transition-all duration-300
-                ${isActive ? "border-zinc-800 hover:border-zinc-600" : "border-zinc-800 opacity-60 grayscale hover:grayscale-0 hover:opacity-100"}
+                ${isActive ? "border-zinc-800 hover:border-zinc-500 hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1" : "border-zinc-800/50"}
             `}>
+                {/* Sold Out Overlay */}
+                {!isActive && (
+                    <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px] z-[5] flex items-center justify-center pointer-events-none border-2 border-zinc-800 m-[-1px]">
+                        <div className="transform -rotate-12 border-2 border-red-500/50 px-4 py-2 rounded">
+                            <span className="text-red-500 font-black text-2xl uppercase tracking-widest opacity-80">Sold Out</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Status Indicator */}
                 <div className={`absolute top-4 right-4 z-10 flex items-center gap-2`}>
 
                     <span className={`
-                        px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded
-                        ${isActive ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-zinc-700/50 text-zinc-500 border border-zinc-700"}
+                        px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded backdrop-blur-md
+                        ${isActive ? "bg-green-500/10 text-green-500 border border-green-500/20 shadow-lg shadow-green-900/20" : "bg-zinc-700/50 text-zinc-500 border border-zinc-700"}
                     `}>
                         {isActive ? "ACTIVE" : "INACTIVE"}
                     </span>
@@ -85,23 +94,29 @@ export function PackageCard({ pkg, eventsList }: PackageCardProps) {
                     </div>
                 </div>
 
-                <div className="p-6">
+                <div className="p-6 relative">
+                    {/* Hover Glow Effect */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
                     {/* Event Info */}
                     <div className="text-xs text-zinc-500 mb-2 font-mono flex items-center gap-1">
-                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-red-500" : "bg-zinc-600"}`} />
+                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-red-500 animate-pulse" : "bg-zinc-600"}`} />
                         {pkg.events?.title || "Unknown Event"}
                     </div>
 
                     {/* Title & Price */}
-                    <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
-                    <div className="text-2xl font-black text-zinc-200 mb-6 font-mono">
+                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-red-500 transition-colors duration-300">{pkg.name}</h3>
+                    <div className="text-2xl font-black text-zinc-200 mb-6 font-mono group-hover:scale-105 origin-left transition-transform duration-300">
                         {new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW" }).format(pkg.price)}
                     </div>
 
                     {/* Composition Badges */}
                     <div className="flex flex-wrap gap-2 mb-6 min-h-[40px]">
-                        {(pkg.composition || []).map((comp: string) => (
-                            <span key={comp} className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300">
+                        {(pkg.composition || []).map((comp: string, i) => (
+                            <span key={comp}
+                                className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 group-hover:border-zinc-600 transition-colors"
+                                style={{ transitionDelay: `${i * 50}ms` }}
+                            >
                                 {comp}
                             </span>
                         ))}
@@ -111,7 +126,7 @@ export function PackageCard({ pkg, eventsList }: PackageCardProps) {
                     <div className="flex items-center gap-2 pt-4 border-t border-zinc-800/50">
                         <button
                             onClick={() => setShowEditModal(true)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-zinc-800 hover:bg-zinc-700 text-sm font-bold text-white rounded transition-colors"
+                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-zinc-800 hover:bg-zinc-700 text-sm font-bold text-white rounded transition-colors group-hover:bg-zinc-700"
                         >
                             <Edit2 className="w-4 h-4" /> Edit
                         </button>

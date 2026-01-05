@@ -21,13 +21,16 @@ import {
     Users,
     CreditCard,
     Package,
-    Settings
+    Settings,
+    ThumbsUp,
+    ThumbsDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { submitContactForm } from "@/features/support/actions";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Tab = "faq" | "privacy" | "terms" | "contact";
 
@@ -63,6 +66,101 @@ interface FormError {
     message?: string;
 }
 
+// Floating Label Input Component
+const FloatingLabelInput = ({
+    label,
+    value,
+    onChange,
+    onBlur,
+    error,
+    type = "text",
+    required = false,
+    multiline = false,
+    className
+}: {
+    label: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    onBlur?: () => void;
+    error?: string;
+    type?: string;
+    required?: boolean;
+    multiline?: boolean;
+    className?: string;
+}) => {
+    const [isFocused, setIsFocused] = useState(false);
+    const hasValue = value.length > 0;
+
+    return (
+        <div className={cn("relative pt-5", className)}>
+            {multiline ? (
+                <textarea
+                    value={value}
+                    onChange={onChange}
+                    onBlur={() => {
+                        setIsFocused(false);
+                        onBlur?.();
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    rows={6}
+                    className={cn(
+                        "w-full px-3 py-3 bg-zinc-900/50 border rounded-md text-white placeholder:text-transparent focus:outline-none focus:ring-0 transition-all resize-none peer",
+                        error
+                            ? "border-red-500"
+                            : isFocused
+                                ? "border-red-500/50 shadow-[0_0_15px_-3px_rgba(239,68,68,0.3)]"
+                                : "border-zinc-700 hover:border-zinc-600"
+                    )}
+                />
+            ) : (
+                <input
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    onBlur={() => {
+                        setIsFocused(false);
+                        onBlur?.();
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    className={cn(
+                        "w-full px-3 py-3 bg-zinc-900/50 border rounded-md text-white placeholder:text-transparent focus:outline-none focus:ring-0 transition-all peer",
+                        error
+                            ? "border-red-500"
+                            : isFocused
+                                ? "border-red-500/50 shadow-[0_0_15px_-3px_rgba(239,68,68,0.3)]"
+                                : "border-zinc-700 hover:border-zinc-600"
+                    )}
+                />
+            )}
+
+            <label
+                className={cn(
+                    "absolute left-3 transition-all duration-200 pointer-events-none",
+                    isFocused || hasValue
+                        ? "top-0 text-xs font-semibold"
+                        : multiline ? "top-8 text-sm text-zinc-500" : "top-8 -translate-y-1/2 text-sm text-zinc-500",
+                    isFocused
+                        ? "text-red-500"
+                        : error ? "text-red-500" : "text-zinc-400"
+                )}
+            >
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
+
+            {error && (
+                <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute -bottom-5 left-0 text-xs text-red-500 flex items-center gap-1"
+                >
+                    <AlertCircle className="w-3 h-3" />
+                    {error}
+                </motion.p>
+            )}
+        </div>
+    );
+};
+
 export function SupportPageClient({
     faqs,
     privacyContent,
@@ -79,6 +177,9 @@ export function SupportPageClient({
     // FAQ filtering
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Feedback state
+    const [feedbackState, setFeedbackState] = useState<Record<number, 'like' | 'dislike' | null>>({});
 
     // Form validation
     const [formErrors, setFormErrors] = useState<FormError>({});
@@ -117,6 +218,16 @@ export function SupportPageClient({
             newSet.add(index);
         }
         setOpenFaqIndices(newSet);
+    };
+
+    const handleFeedback = (faqId: number, type: 'like' | 'dislike') => {
+        setFeedbackState(prev => ({
+            ...prev,
+            [faqId]: prev[faqId] === type ? null : type
+        }));
+        if (feedbackState[faqId] !== type) {
+            toast.success("피드백이 반영되었습니다.");
+        }
     };
 
     // Validation
@@ -421,7 +532,7 @@ export function SupportPageClient({
                                         </div>
                                     </div>
 
-                                    {/* FAQ List */}
+                                    {/* FAQ List with Framer Motion */}
                                     <div className="space-y-3">
                                         {filteredFaqs.length > 0 ? (
                                             filteredFaqs.map((faq, index) => {
@@ -465,25 +576,66 @@ export function SupportPageClient({
                                                                 </span>
                                                             </div>
 
-                                                            <ChevronDown className={cn(
-                                                                "w-5 h-5 shrink-0 transition-all duration-300 mt-1",
-                                                                isOpen ? "text-red-500 rotate-180" : "text-zinc-500 group-hover:text-zinc-300"
-                                                            )} />
+                                                            <motion.div
+                                                                animate={{ rotate: isOpen ? 180 : 0 }}
+                                                                transition={{ duration: 0.3 }}
+                                                            >
+                                                                <ChevronDown className={cn(
+                                                                    "w-5 h-5 shrink-0 transition-colors",
+                                                                    isOpen ? "text-red-500" : "text-zinc-500 group-hover:text-zinc-300"
+                                                                )} />
+                                                            </motion.div>
                                                         </button>
 
-                                                        {/* Answer with animation */}
-                                                        <div className={cn(
-                                                            "overflow-hidden transition-all duration-300 ease-out",
-                                                            isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-                                                        )}>
-                                                            <div className="px-4 pb-4 pt-0">
-                                                                <div className="ml-11 pl-4 border-l-2 border-red-500/30">
-                                                                    <p className="text-zinc-400 text-sm leading-relaxed">
-                                                                        {faq.answer}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                        {/* Answer with Framer Motion */}
+                                                        <AnimatePresence initial={false}>
+                                                            {isOpen && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                                    style={{ overflow: 'hidden' }}
+                                                                >
+                                                                    <div className="px-4 pb-4 pt-0">
+                                                                        <div className="ml-11 pl-4 border-l-2 border-red-500/30 space-y-4">
+                                                                            <p className="text-zinc-400 text-sm leading-relaxed">
+                                                                                {faq.answer}
+                                                                            </p>
+
+                                                                            {/* Feedback UI */}
+                                                                            <div className="flex items-center gap-4 pt-2">
+                                                                                <p className="text-xs text-zinc-500">이 답변이 도움이 되었나요?</p>
+                                                                                <div className="flex gap-2">
+                                                                                    <button
+                                                                                        onClick={() => handleFeedback(faq.id, 'like')}
+                                                                                        className={cn(
+                                                                                            "p-1.5 rounded-full transition-colors",
+                                                                                            feedbackState[faq.id] === 'like'
+                                                                                                ? "bg-emerald-500/20 text-emerald-500"
+                                                                                                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+                                                                                        )}
+                                                                                    >
+                                                                                        <ThumbsUp className="w-3.5 h-3.5" />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => handleFeedback(faq.id, 'dislike')}
+                                                                                        className={cn(
+                                                                                            "p-1.5 rounded-full transition-colors",
+                                                                                            feedbackState[faq.id] === 'dislike'
+                                                                                                ? "bg-red-500/20 text-red-500"
+                                                                                                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+                                                                                        )}
+                                                                                    >
+                                                                                        <ThumbsDown className="w-3.5 h-3.5" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
                                                     </div>
                                                 );
                                             })
@@ -528,9 +680,9 @@ export function SupportPageClient({
                                 </div>
                             )}
 
-                            {/* Contact Tab - Enhanced with Validation */}
+                            {/* Contact Tab - Enhanced with Validation and Floating Labels */}
                             {activeTab === "contact" && (
-                                <form onSubmit={handleContactSubmit} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <form onSubmit={handleContactSubmit} className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                                     {/* Success animation overlay */}
                                     {isSuccess && (
                                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
@@ -546,117 +698,48 @@ export function SupportPageClient({
                                         </div>
                                     )}
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Name Field */}
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-zinc-400">
-                                                이름 <span className="text-red-500">*</span>
-                                            </label>
-                                            <div className="relative">
-                                                <Input
-                                                    value={contactForm.name}
-                                                    onChange={(e) => handleInputChange("name", e.target.value)}
-                                                    onBlur={() => handleBlur("name")}
-                                                    placeholder="홍길동"
-                                                    className={cn(
-                                                        "bg-zinc-900/50 transition-all",
-                                                        formErrors.name && touched.name
-                                                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                                            : "border-zinc-700 focus:border-red-500/50"
-                                                    )}
-                                                />
-                                                {touched.name && !formErrors.name && contactForm.name && (
-                                                    <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
-                                                )}
-                                            </div>
-                                            {formErrors.name && touched.name && (
-                                                <p className="text-xs text-red-400 flex items-center gap-1 animate-in slide-in-from-top-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {formErrors.name}
-                                                </p>
-                                            )}
-                                        </div>
+                                        <FloatingLabelInput
+                                            label="이름"
+                                            value={contactForm.name}
+                                            onChange={(e) => handleInputChange("name", e.target.value)}
+                                            onBlur={() => handleBlur("name")}
+                                            error={touched.name ? formErrors.name : undefined}
+                                            required
+                                        />
 
                                         {/* Email Field */}
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-zinc-400">
-                                                이메일 <span className="text-red-500">*</span>
-                                            </label>
-                                            <div className="relative">
-                                                <Input
-                                                    type="email"
-                                                    value={contactForm.email}
-                                                    onChange={(e) => handleInputChange("email", e.target.value)}
-                                                    onBlur={() => handleBlur("email")}
-                                                    placeholder="email@example.com"
-                                                    className={cn(
-                                                        "bg-zinc-900/50 transition-all",
-                                                        formErrors.email && touched.email
-                                                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                                            : "border-zinc-700 focus:border-red-500/50"
-                                                    )}
-                                                />
-                                                {touched.email && !formErrors.email && contactForm.email && (
-                                                    <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
-                                                )}
-                                            </div>
-                                            {formErrors.email && touched.email && (
-                                                <p className="text-xs text-red-400 flex items-center gap-1 animate-in slide-in-from-top-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {formErrors.email}
-                                                </p>
-                                            )}
-                                        </div>
+                                        <FloatingLabelInput
+                                            label="이메일"
+                                            type="email"
+                                            value={contactForm.email}
+                                            onChange={(e) => handleInputChange("email", e.target.value)}
+                                            onBlur={() => handleBlur("email")}
+                                            error={touched.email ? formErrors.email : undefined}
+                                            required
+                                        />
                                     </div>
 
                                     {/* Subject Field */}
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-zinc-400">
-                                            제목 <span className="text-zinc-600">(선택)</span>
-                                        </label>
-                                        <Input
-                                            value={contactForm.subject}
-                                            onChange={(e) => handleInputChange("subject", e.target.value)}
-                                            placeholder="문의 제목을 입력해주세요"
-                                            className="bg-zinc-900/50 border-zinc-700 focus:border-red-500/50"
-                                        />
-                                    </div>
+                                    <FloatingLabelInput
+                                        label="제목 (선택)"
+                                        value={contactForm.subject}
+                                        onChange={(e) => handleInputChange("subject", e.target.value)}
+                                    />
 
                                     {/* Message Field */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <label className="block text-sm font-medium text-zinc-400">
-                                                내용 <span className="text-red-500">*</span>
-                                            </label>
-                                            <span className={cn(
-                                                "text-xs",
-                                                contactForm.message.length < 10 ? "text-zinc-600" : "text-emerald-500"
-                                            )}>
-                                                {contactForm.message.length}/10자 이상
-                                            </span>
-                                        </div>
-                                        <textarea
-                                            value={contactForm.message}
-                                            onChange={(e) => handleInputChange("message", e.target.value)}
-                                            onBlur={() => handleBlur("message")}
-                                            placeholder="문의 내용을 자세히 적어주세요"
-                                            rows={6}
-                                            className={cn(
-                                                "w-full px-3 py-3 bg-zinc-900/50 border rounded-md text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 transition-all resize-none",
-                                                formErrors.message && touched.message
-                                                    ? "border-red-500 focus:ring-red-500/20"
-                                                    : "border-zinc-700 focus:ring-red-500/50 focus:border-red-500"
-                                            )}
-                                        />
-                                        {formErrors.message && touched.message && (
-                                            <p className="text-xs text-red-400 flex items-center gap-1 animate-in slide-in-from-top-1">
-                                                <AlertCircle className="w-3 h-3" />
-                                                {formErrors.message}
-                                            </p>
-                                        )}
-                                    </div>
+                                    <FloatingLabelInput
+                                        label="내용"
+                                        value={contactForm.message}
+                                        onChange={(e) => handleInputChange("message", e.target.value)}
+                                        onBlur={() => handleBlur("message")}
+                                        error={touched.message ? formErrors.message : undefined}
+                                        required
+                                        multiline
+                                    />
 
-                                    {/* Submit Button */}
+                                    {/* Submit Button with Plane Animation */}
                                     <Button
                                         type="submit"
                                         disabled={isSubmitting}
@@ -664,7 +747,7 @@ export function SupportPageClient({
                                         className={cn(
                                             "w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600",
                                             "text-white font-bold shadow-lg shadow-red-500/20 hover:shadow-red-500/30",
-                                            "transition-all duration-300 h-12"
+                                            "transition-all duration-300 h-14 group relative overflow-hidden"
                                         )}
                                     >
                                         {isSubmitting ? (
@@ -673,8 +756,14 @@ export function SupportPageClient({
                                                 전송 중...
                                             </span>
                                         ) : (
-                                            <span className="flex items-center gap-2">
-                                                <Send className="w-5 h-5" />
+                                            <span className="flex items-center gap-2 relative z-10">
+                                                <motion.div
+                                                    initial={{ x: 0, y: 0 }}
+                                                    whileHover={{ x: 5, y: -5 }}
+                                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                                >
+                                                    <Send className="w-5 h-5" />
+                                                </motion.div>
                                                 문의 보내기
                                             </span>
                                         )}

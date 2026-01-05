@@ -7,7 +7,8 @@ export type PipelineStage = "WAITING" | "EDITING" | "READY" | "DELIVERED";
 export type PipelineCardWithDetails = Omit<Database["public"]["Tables"]["pipeline_cards"]["Row"], "stage"> & {
     stage: PipelineStage;
     order_node: Database["public"]["Tables"]["orders"]["Row"] & {
-        user_node: { name: string; email: string };
+        athlete_number?: string | null;
+        user_node: { name: string; email: string; phone: string | null };
         package_node: { name: string };
         event_node: { title: string; event_date: string };
     };
@@ -25,7 +26,7 @@ export async function getAllPipelineCards(supabase: SupabaseClient<Database>): P
             *,
             order_node:orders!inner (
                 *,
-                user_node:profiles!inner (name, email),
+                user_node:profiles!inner (name, email, phone),
                 package_node:packages!inner (name),
                 event_node:events!inner (title, event_date)
             ),
@@ -52,7 +53,7 @@ export async function getPipelineCardsByEvent(supabase: SupabaseClient<Database>
             *,
             order_node:orders!inner (
                 *,
-                user_node:profiles!inner (name, email),
+                user_node:profiles!inner (name, email, phone),
                 package_node:packages!inner (name),
                 event_node:events!inner (title, event_date)
             ),

@@ -191,3 +191,63 @@ export async function getActiveEvents(): Promise<Event[]> {
 
     return (data as Event[]) || [];
 }
+
+/**
+ * 특정 패키지와 그 쇼케이스 아이템 조회
+ *
+ * @param packageId - 패키지 ID
+ * @returns 패키지 정보 (쇼케이스 미디어 포함)
+ */
+export async function getPackageWithShowcase(
+    packageId: number
+): Promise<PackageWithShowcase | null> {
+    const supabase = await createClient();
+
+    // 1. 패키지 조회
+    const { data: pkg, error: packageError } = await supabase
+        .from("packages")
+        .select("*")
+        .eq("id", packageId)
+        .single();
+
+    if (packageError) {
+        console.error("[Dealer] Failed to fetch package:", packageError);
+        return null;
+    }
+
+    if (!pkg) {
+        return null;
+    }
+
+    // 2. 쇼케이스 아이템 조회
+    const { data: showcaseItems, error: showcaseError } = await supabase
+        .from("showcase_items")
+        .select("*")
+        .eq("package_id", packageId)
+        .order("is_best_cut", { ascending: false });
+
+    if (showcaseError) {
+        console.error("[Dealer] Failed to fetch showcase items for package:", showcaseError);
+    }
+
+    // 3. 조합
+    return {
+        id: pkg.id,
+        event_id: pkg.event_id,
+        name: pkg.name,
+        price: pkg.price,
+        description: pkg.description,
+        composition: (pkg.composition as string[]) || [],
+        specs: pkg.specs as Record<string, string> | null,
+        is_sold_out: pkg.is_sold_out,
+        showcase_items:
+            showcaseItems?.map((item) => ({
+                id: item.id,
+                package_id: item.package_id,
+                type: item.type as "VIDEO" | "IMAGE",
+                media_url: item.media_url,
+                thumbnail_url: item.thumbnail_url,
+                is_best_cut: item.is_best_cut,
+            })) || [],
+    };
+}

@@ -7,8 +7,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as PortOne from "@portone/browser-sdk/v2";
+import { motion, AnimatePresence, animate } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { PackageWithShowcase } from "@/features/showcase/queries";
 import { PackageCard } from "@/features/showcase/components";
@@ -36,6 +38,7 @@ const EXTRA_OPTIONS = [
     { id: "rush_edit", name: "24시간 내 긴급 편집", price: 50000 },
 ];
 
+
 /**
  * 가격 포맷터
  */
@@ -45,6 +48,32 @@ function formatPrice(price: number): string {
         currency: "KRW",
         maximumFractionDigits: 0,
     }).format(price);
+}
+
+
+/**
+ * Animated Number Component
+ */
+function AnimatedPrice({ value }: { value: number }) {
+    const [displayValue, setDisplayValue] = useState(value);
+
+    useEffect(() => {
+        const controls = { value: displayValue };
+        const unsubscribe = animate(displayValue, value, {
+            duration: 0.5,
+            ease: "circOut",
+            onUpdate: (latest: number) => {
+                setDisplayValue(Math.round(latest));
+            }
+        });
+        return () => unsubscribe.stop();
+    }, [value]);
+
+    return (
+        <span className="tabular-nums">
+            {formatPrice(displayValue)}
+        </span>
+    );
 }
 
 export function EventDetailClient({
@@ -193,6 +222,7 @@ export function EventDetailClient({
                 // 결제는 되었는데 주문 생성이 안 된 심각한 상황 -> 관리자 컨택 포인트 안내 필요
             }
 
+
         } catch (error) {
             console.error("Payment Exception:", error);
             alert("결제 처리 중 알 수 없는 오류가 발생했습니다.");
@@ -200,6 +230,24 @@ export function EventDetailClient({
             setIsProcessing(false);
         }
     };
+
+    // Sticky Bar Visibility
+    const [showStickyBar, setShowStickyBar] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            // Show sticky bar when scrolled past a certain point (e.g., 300px)
+            if (scrollY > 300) {
+                setShowStickyBar(true);
+            } else {
+                setShowStickyBar(false);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
     return (
         <div className="grid lg:grid-cols-3 gap-8">
@@ -469,6 +517,41 @@ export function EventDetailClient({
                     </div>
                 </div>
             </div>
+
+            {/* Sticky Action Bar */}
+            <AnimatePresence>
+                {showStickyBar && selectedPackage && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        className="fixed bottom-0 left-0 right-0 bg-zinc-900/90 backdrop-blur-md border-t border-zinc-800 p-4 z-50 safe-area-bottom"
+                    >
+                        <div className="container mx-auto max-w-7xl flex items-center justify-between gap-4">
+                            <div className="hidden sm:block">
+                                <div className="text-sm text-zinc-400">선택한 패키지</div>
+                                <div className="font-bold text-white">{selectedPackage.name}</div>
+                            </div>
+
+                            <div className="flex items-center gap-6 flex-1 sm:flex-none justify-end">
+                                <div className="text-right mr-2">
+                                    <div className="text-xs text-zinc-500">총 결제금액</div>
+                                    <div className="text-xl font-black text-red-500">
+                                        <AnimatedPrice value={calculateTotal()} />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleProceedToPayment}
+                                    disabled={!isActive || selectedPackage.is_sold_out || isProcessing || !userId || (disciplines.length > 0 && !selectedDiscipline)}
+                                    className="bg-red-600 text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider hover:bg-red-500 disabled:bg-zinc-700 disabled:cursor-not-allowed transition-colors shadow-lg shadow-red-900/20"
+                                >
+                                    {isProcessing ? "처리중..." : "결제하기"}
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { PremiumInput } from "@/components/ui/premium-input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { SaveButton } from "@/components/ui/save-button";
 import { Switch } from "@/components/ui/switch";
 import { upsertSetting } from "@/features/settings/actions";
 import { toast } from "sonner";
-import { Save, Loader2, Globe, Mail, Search, ShieldAlert, BadgeCheck } from "lucide-react";
+import { Globe, Mail, Search, ShieldAlert, BadgeCheck } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface GeneralSettingsClientProps {
@@ -17,7 +17,6 @@ interface GeneralSettingsClientProps {
 
 export default function GeneralSettingsClient({ initialSettings }: GeneralSettingsClientProps) {
     const [settings, setSettings] = useState(initialSettings);
-    const [loading, setLoading] = useState(false);
     const [dirty, setDirty] = useState(false);
 
     const handleChange = (key: string, value: string) => {
@@ -26,7 +25,6 @@ export default function GeneralSettingsClient({ initialSettings }: GeneralSettin
     };
 
     const handleSave = async () => {
-        setLoading(true);
         try {
             // Save all settings sequentially or parallel
             const promises = Object.entries(settings).map(([key, value]) =>
@@ -46,8 +44,7 @@ export default function GeneralSettingsClient({ initialSettings }: GeneralSettin
             toast.error("Error saving settings", {
                 description: error.message
             });
-        } finally {
-            setLoading(false);
+            throw error;
         }
     };
 
@@ -63,23 +60,11 @@ export default function GeneralSettingsClient({ initialSettings }: GeneralSettin
                         Manage global parameters for the VidFlow platform.
                     </p>
                 </div>
-                <Button
-                    onClick={handleSave}
-                    disabled={!dirty || loading}
-                    className="bg-red-600 hover:bg-red-700 text-white font-bold tracking-wider rounded-sm transition-all shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_20px_rgba(220,38,38,0.5)]"
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            SAVING...
-                        </>
-                    ) : (
-                        <>
-                            <Save className="w-4 h-4 mr-2" />
-                            SAVE CHANGES
-                        </>
-                    )}
-                </Button>
+                <SaveButton
+                    onSave={handleSave}
+                    disabled={!dirty}
+                    className="shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_20px_rgba(220,38,38,0.5)] bg-red-600 hover:bg-red-700 text-white font-bold tracking-wider"
+                />
             </div>
 
             <Separator className="bg-zinc-800" />
@@ -96,9 +81,9 @@ export default function GeneralSettingsClient({ initialSettings }: GeneralSettin
                 <CardContent className="space-y-6 p-6">
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label htmlFor="site_name" className="text-zinc-300">Site Name (Brand Text)</Label>
-                            <Input
+                            <PremiumInput
                                 id="site_name"
+                                label="Site Name (Brand Text)"
                                 value={settings.site_name || ""}
                                 onChange={(e) => handleChange("site_name", e.target.value)}
                                 className="bg-black/50 border-zinc-700 focus:border-red-500 text-white rounded-sm"
@@ -106,9 +91,9 @@ export default function GeneralSettingsClient({ initialSettings }: GeneralSettin
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="site_logo_symbol" className="text-zinc-300">Logo Symbol (Square Icon)</Label>
-                            <Input
+                            <PremiumInput
                                 id="site_logo_symbol"
+                                label="Logo Symbol (Square Icon)"
                                 value={settings.site_logo_symbol || ""}
                                 onChange={(e) => handleChange("site_logo_symbol", e.target.value)}
                                 className="bg-black/50 border-zinc-700 focus:border-red-500 text-white rounded-sm"
@@ -117,11 +102,11 @@ export default function GeneralSettingsClient({ initialSettings }: GeneralSettin
                             />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="support_email" className="text-zinc-300">Support Email</Label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
-                                <Input
+                                <Mail className="absolute left-3 top-[2.2rem] z-10 h-4 w-4 text-zinc-500" />
+                                <PremiumInput
                                     id="support_email"
+                                    label="Support Email"
                                     value={settings.support_email || ""}
                                     onChange={(e) => handleChange("support_email", e.target.value)}
                                     className="pl-9 bg-black/50 border-zinc-700 focus:border-red-500 text-white rounded-sm"
@@ -144,9 +129,9 @@ export default function GeneralSettingsClient({ initialSettings }: GeneralSettin
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
                     <div className="space-y-2">
-                        <Label htmlFor="seo_title" className="text-zinc-300">Default Page Title</Label>
-                        <Input
+                        <PremiumInput
                             id="seo_title"
+                            label="Default Page Title"
                             value={settings.seo_title || ""}
                             onChange={(e) => handleChange("seo_title", e.target.value)}
                             className="bg-black/50 border-zinc-700 focus:border-blue-500 text-white rounded-sm"

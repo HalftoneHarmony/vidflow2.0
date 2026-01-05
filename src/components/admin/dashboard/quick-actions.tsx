@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * ⚡ Analytics Quick Actions Panel
+ * ⚡ Dashboard Quick Actions (Moved from Analytics)
  * 관리자를 위한 빠른 액션 및 알림 패널
- * @author Agent 3 (Analytics Master)
  */
 
 import { useState } from "react";
@@ -12,7 +11,6 @@ import Link from "next/link";
 import {
     Zap,
     AlertTriangle,
-    Clock,
     Users,
     TrendingUp,
     FileDown,
@@ -20,14 +18,15 @@ import {
     ChevronRight,
     Bell,
     CheckCircle2,
-    X
+    X,
+    Truck
 } from "lucide-react";
 
 // ==========================================
 // Types
 // ==========================================
 
-type Alert = {
+export type Alert = {
     id: string;
     type: "warning" | "info" | "success";
     message: string;
@@ -47,7 +46,7 @@ type QuickAction = {
 };
 
 type Props = {
-    alerts: Alert[];
+    alerts?: Alert[];
     pipelineBottleneck?: any[];
     onRefresh?: () => void;
     onExport?: () => void;
@@ -57,7 +56,7 @@ type Props = {
 // Main Component
 // ==========================================
 
-export function AnalyticsQuickActions({ alerts, pipelineBottleneck, onRefresh, onExport }: Props) {
+export function QuickActions({ alerts = [], pipelineBottleneck, onRefresh, onExport }: Props) {
     const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
 
     // Generate dynamic alerts based on data
@@ -84,30 +83,30 @@ export function AnalyticsQuickActions({ alerts, pipelineBottleneck, onRefresh, o
     const quickActions: QuickAction[] = [
         {
             id: "pipeline",
-            label: "파이프라인",
+            label: "Pipeline",
             icon: Zap,
             href: "/admin/pipeline",
             color: "#3b82f6"
         },
         {
             id: "delivery",
-            label: "전달 관리",
-            icon: CheckCircle2,
+            label: "Delivery",
+            icon: Truck,
             href: "/admin/delivery",
             color: "#22c55e"
         },
         {
             id: "users",
-            label: "고객 관리",
+            label: "Users",
             icon: Users,
             href: "/admin/users",
             color: "#8b5cf6"
         },
         {
-            id: "finance",
-            label: "재무",
+            id: "analytics",
+            label: "Analytics",
             icon: TrendingUp,
-            href: "/admin/finance",
+            href: "/admin/analytics",
             color: "#f59e0b"
         },
     ];
@@ -117,7 +116,7 @@ export function AnalyticsQuickActions({ alerts, pipelineBottleneck, onRefresh, o
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 mb-6">
             {/* Alerts Section */}
             <AnimatePresence mode="popLayout">
                 {allAlerts.map((alert, index) => (
@@ -138,10 +137,10 @@ export function AnalyticsQuickActions({ alerts, pipelineBottleneck, onRefresh, o
                     >
                         <div className="px-4 py-3 flex items-center gap-3">
                             <div className={`p-1.5 rounded-lg ${alert.type === "warning"
-                                    ? "bg-amber-500/20"
-                                    : alert.type === "success"
-                                        ? "bg-emerald-500/20"
-                                        : "bg-blue-500/20"
+                                ? "bg-amber-500/20"
+                                : alert.type === "success"
+                                    ? "bg-emerald-500/20"
+                                    : "bg-blue-500/20"
                                 }`}>
                                 {alert.type === "warning" ? (
                                     <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -158,8 +157,8 @@ export function AnalyticsQuickActions({ alerts, pipelineBottleneck, onRefresh, o
                                 <Link
                                     href={alert.action.href}
                                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${alert.type === "warning"
-                                            ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-                                            : "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                                        ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                                        : "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
                                         }`}
                                 >
                                     {alert.action.label}
@@ -213,20 +212,46 @@ export function AnalyticsQuickActions({ alerts, pipelineBottleneck, onRefresh, o
                         const Icon = action.icon;
                         const content = (
                             <motion.div
-                                className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/30 border border-zinc-700/50 hover:border-zinc-600/50 hover:bg-zinc-800/50 transition-all group cursor-pointer"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+                                className="relative overflow-hidden flex items-center gap-3 p-3 rounded-xl bg-zinc-800/30 border border-zinc-700/50 hover:border-zinc-500/50 hover:bg-zinc-800/80 transition-all group cursor-pointer"
+                                whileHover="hover"
+                                whileTap="tap"
+                                variants={{
+                                    hover: { scale: 1.02 },
+                                    tap: { scale: 0.95 }
+                                }}
                             >
-                                <div
-                                    className="p-2 rounded-lg transition-colors"
+                                <motion.div
+                                    className="p-2 rounded-lg transition-colors z-10"
                                     style={{ backgroundColor: `${action.color}20` }}
+                                    variants={{
+                                        hover: {
+                                            y: -2,
+                                            backgroundColor: `${action.color}30`
+                                        }
+                                    }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
                                 >
                                     <Icon className="w-4 h-4" style={{ color: action.color }} />
-                                </div>
-                                <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors">
+                                </motion.div>
+                                <span className="text-sm font-medium text-zinc-300 group-hover:text-white transition-colors z-10">
                                     {action.label}
                                 </span>
-                                <ChevronRight className="w-4 h-4 text-zinc-600 ml-auto group-hover:text-zinc-400 transition-colors" />
+                                <motion.div
+                                    className="ml-auto z-10"
+                                    variants={{
+                                        hover: { x: 2 }
+                                    }}
+                                >
+                                    <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+                                </motion.div>
+
+                                {/* Subtle Gradient Background Effect on Hover */}
+                                <motion.div
+                                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                    style={{
+                                        background: `linear-gradient(120deg, transparent 0%, ${action.color}10 50%, transparent 100%)`
+                                    }}
+                                />
                             </motion.div>
                         );
 

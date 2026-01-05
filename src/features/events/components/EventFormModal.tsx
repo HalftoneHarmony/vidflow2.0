@@ -10,6 +10,7 @@ import { createEvent, updateEvent } from "../actions";
 import { AdminEvent } from "../queries";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface EventFormModalProps {
     isOpen: boolean;
@@ -59,9 +60,15 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                <motion.form
+                    onSubmit={handleSubmit}
+                    className="space-y-4 py-4"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.3 }}
+                >
                     {/* Title */}
-                    <div className="space-y-2">
+                    <motion.div className="space-y-2" initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.2 }}>
                         <Label htmlFor="title" className="text-zinc-400">Event Title</Label>
                         <Input
                             id="title"
@@ -71,10 +78,10 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                             required
                             className="bg-zinc-950 border-zinc-800 focus:border-red-500 text-white"
                         />
-                    </div>
+                    </motion.div>
 
                     {/* Date */}
-                    <div className="space-y-2">
+                    <motion.div className="space-y-2" initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.25 }}>
                         <Label htmlFor="eventDate" className="text-zinc-400">Date</Label>
                         <Input
                             id="eventDate"
@@ -84,10 +91,10 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                             required
                             className="bg-zinc-950 border-zinc-800 focus:border-red-500 text-white"
                         />
-                    </div>
+                    </motion.div>
 
                     {/* Location */}
-                    <div className="space-y-2">
+                    <motion.div className="space-y-2" initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
                         <Label htmlFor="location" className="text-zinc-400">Location</Label>
                         <Input
                             id="location"
@@ -96,10 +103,10 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                             placeholder="e.g. Seoul Grand Hyatt"
                             className="bg-zinc-950 border-zinc-800 focus:border-red-500 text-white"
                         />
-                    </div>
+                    </motion.div>
 
                     {/* Thumbnail URL */}
-                    <div className="space-y-2">
+                    <motion.div className="space-y-2" initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.35 }}>
                         <Label htmlFor="thumbnailUrl" className="text-zinc-400">Thumbnail URL</Label>
                         <Input
                             id="thumbnailUrl"
@@ -108,10 +115,10 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                             placeholder="https://..."
                             className="bg-zinc-950 border-zinc-800 focus:border-red-500 text-white"
                         />
-                    </div>
+                    </motion.div>
 
                     {/* Disciplines */}
-                    <div className="space-y-2">
+                    <motion.div className="space-y-2" initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.4 }}>
                         <Label htmlFor="disciplines" className="text-zinc-400">Disciplines (Categories)</Label>
                         <div className="flex flex-wrap gap-2 p-3 min-h-[60px] bg-zinc-950 border border-zinc-800 rounded-md">
                             {disciplinesStr.split(",").map(s => s.trim()).filter(Boolean).map((discipline, idx) => (
@@ -159,10 +166,10 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                             name="disciplines"
                             value={JSON.stringify(disciplinesStr.split(",").map(s => s.trim()).filter(Boolean))}
                         />
-                    </div>
+                    </motion.div>
 
                     {/* Active Status */}
-                    <div className="flex items-center justify-between pt-2 p-3 border border-zinc-800 rounded-md bg-zinc-950/50">
+                    <motion.div className="flex items-center justify-between pt-2 p-3 border border-zinc-800 rounded-md bg-zinc-950/50" initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.45 }}>
                         <div className="flex flex-col gap-0.5">
                             <Label htmlFor="isActive" className="text-zinc-300">Public Visibility</Label>
                             <span className="text-[10px] text-zinc-500">
@@ -183,7 +190,7 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                                 value={String(isActive)}
                             />
                         </div>
-                    </div>
+                    </motion.div>
 
                     <DialogFooter className="pt-4">
                         <Button
@@ -204,7 +211,7 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                             {isEditMode ? "Save Changes" : "Create Event"}
                         </Button>
                     </DialogFooter>
-                </form>
+                </motion.form>
             </DialogContent>
         </Dialog>
     );

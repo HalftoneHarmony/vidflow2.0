@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Product } from "../queries";
 import { PackageCard } from "./PackageCard";
+import { GroupedPackageCard } from "./GroupedPackageCard";
 import { CreatePackageModal } from "./CreatePackageModal";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -97,14 +98,35 @@ export function ProductArsenal({ packages, events }: ProductArsenalProps) {
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredPackages.map((pkg) => (
-                        <PackageCard
-                            key={pkg.id}
-                            pkg={pkg}
-                            eventsList={events}
-                        />
-                    ))}
+                <div className="space-y-6">
+                    {selectedEventId === null ? (
+                        // Grouped View for "All Products"
+                        Object.entries(
+                            filteredPackages.reduce((acc, pkg) => {
+                                if (!acc[pkg.name]) acc[pkg.name] = [];
+                                acc[pkg.name].push(pkg);
+                                return acc;
+                            }, {} as Record<string, Product[]>)
+                        ).map(([name, groupPackages]) => (
+                            <GroupedPackageCard
+                                key={name}
+                                name={name}
+                                packages={groupPackages}
+                                eventsList={events}
+                            />
+                        ))
+                    ) : (
+                        // Grid View for Specific Event
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredPackages.map((pkg) => (
+                                <PackageCard
+                                    key={pkg.id}
+                                    pkg={pkg}
+                                    eventsList={events}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

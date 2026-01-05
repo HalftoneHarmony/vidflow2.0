@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Shield, Edit3, User as UserIcon } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { motion } from "framer-motion";
 
 /**
  * 👥 User Table Component
@@ -79,12 +81,21 @@ export function UserTable({ users }: UserTableProps) {
     const columns: Column<Profile>[] = [
         {
             header: "Name",
-            cell: (user) => (
-                <div className="flex flex-col">
-                    <span className="font-bold text-white">{user.name}</span>
-                    <span className="text-xs text-zinc-500">{user.email}</span>
-                </div>
-            ),
+            cell: (user) => {
+                return (
+                    <div className="flex items-center gap-3 group cursor-default">
+                        <Avatar className="h-9 w-9 border border-zinc-800 transition-transform group-hover:scale-110">
+                            <AvatarFallback className="bg-zinc-900 font-bold text-zinc-500 group-hover:text-zinc-200 transition-colors">
+                                {user.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-white group-hover:text-red-500 transition-colors">{user.name}</span>
+                            <span className="text-xs text-zinc-500">{user.email}</span>
+                        </div>
+                    </div>
+                );
+            },
         },
         {
             header: "Role",
@@ -101,7 +112,7 @@ export function UserTable({ users }: UserTableProps) {
                                 className="h-8 gap-1 px-2 hover:bg-zinc-800"
                                 disabled={isLoading}
                             >
-                                <Badge variant={config.variant} className="gap-1">
+                                <Badge variant={config.variant} className="gap-1 animate-in fade-in zoom-in duration-300">
                                     <Icon className="w-3 h-3" />
                                     {config.label}
                                 </Badge>
@@ -130,14 +141,16 @@ export function UserTable({ users }: UserTableProps) {
         },
         {
             header: "Commission",
-            cell: (user) => (
-                <InlineEdit
-                    value={String(user.commission_rate || 0)}
-                    onSave={(val) => handleCommissionChange(user.id, val)}
-                    className="font-mono text-emerald-500"
-                    placeholder="0"
-                />
-            ),
+            cell: (user) => {
+                return (
+                    <InlineEdit
+                        value={String(user.commission_rate || 0)}
+                        onSave={(val) => handleCommissionChange(user.id, val)}
+                        className="font-mono text-emerald-500"
+                        placeholder="0"
+                    />
+                )
+            },
         },
         {
             header: "Phone",

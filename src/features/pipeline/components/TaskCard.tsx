@@ -2,7 +2,8 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AlertTriangle, User, Package, CheckCircle2, Circle } from "lucide-react";
+import { AlertTriangle, User, Package, CheckCircle2, Circle, Phone, Mail, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { PipelineCardWithDetails } from "../queries";
 
 interface TaskCardProps {
@@ -118,20 +119,20 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
         if (card.stage === "DELIVERED") return null;
         if (isStuck7) {
             return (
-                <div className="absolute top-0 right-0 z-20 flex items-center shadow-lg">
-                    <div className="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-bl-lg flex items-center gap-1 animate-pulse">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 flex items-center shadow-lg">
+                    <div className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-b-md flex items-center gap-1.5 animate-pulse shadow-md border border-t-0 border-red-400/50">
                         <AlertTriangle className="h-3 w-3" />
-                        +{deltaDays} DAYS
+                        <span>+{deltaDays} DAYS</span>
                     </div>
                 </div>
             );
         }
         if (isStuck3) {
             return (
-                <div className="absolute top-0 right-0 z-20 flex items-center shadow-lg">
-                    <div className="bg-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-bl-lg flex items-center gap-1">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 flex items-center shadow-lg">
+                    <div className="bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-b-md flex items-center gap-1.5 shadow-md border border-t-0 border-orange-300/50">
                         <AlertTriangle className="h-3 w-3" />
-                        +{deltaDays} DAYS
+                        <span>+{deltaDays} DAYS</span>
                     </div>
                 </div>
             );
@@ -154,6 +155,11 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
     const handleSelectClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         onToggleSelect?.(card.id, e.shiftKey);
+    };
+
+    const handleCopy = (text: string, type: "phone" | "email") => {
+        navigator.clipboard.writeText(text);
+        toast.success(`${type === "phone" ? "전화번호가" : "이메일이"} 복사되었습니다.`);
     };
 
     return (
@@ -190,32 +196,74 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
             {/* Corner Badge for Stuck Status */}
             {getStuckBadge()}
 
-            {/* Row 1: Name - Number - Discipline */}
-            <div className="flex items-center gap-2 mb-1.5 pr-16 w-full overflow-hidden relative z-10">
-                {/* Name */}
-                <h4 className="shrink truncate font-bold text-xs text-zinc-200 group-hover:text-red-400 transition-colors">
-                    {card.order_node?.user_node?.name || "Unknown"}
-                </h4>
+            {/* Main Content Areas: Split Left/Right */}
+            <div className="flex justify-between items-start gap-2 mb-2 relative z-10 min-h-[50px]">
+                {/* Left Column: Identify & Package */}
+                <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                    {/* Name - Number - Discipline */}
+                    <div className="flex items-center gap-2 w-full overflow-hidden">
+                        {/* Name */}
+                        <h4 className="shrink truncate font-bold text-xs text-zinc-200 group-hover:text-red-400 transition-colors">
+                            {card.order_node?.user_node?.name || "Unknown"}
+                        </h4>
 
-                {/* Number */}
-                <span className="shrink-0 text-[10px] font-mono font-bold text-zinc-500">
-                    NO.---
-                </span>
+                        {/* Number */}
+                        <span className="shrink-0 text-[10px] font-mono font-bold text-zinc-500">
+                            NO.{card.order_node?.athlete_number || "---"}
+                        </span>
 
-                {/* Discipline */}
-                {(card.order_node as any).discipline && (
-                    <span className="shrink-0 text-[9px] font-semibold text-zinc-400 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded uppercase leading-none">
-                        {(card.order_node as any).discipline.slice(0, 3)}
+                        {/* Discipline */}
+                        {(card.order_node as any).discipline && (
+                            <span className="shrink-0 text-[9px] font-semibold text-zinc-400 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded uppercase leading-none">
+                                {(card.order_node as any).discipline.slice(0, 3)}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Package */}
+                    <div className={`inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-medium w-fit max-w-full ${packageStyle}`}>
+                        <Package className="w-3 h-3 opacity-70 shrink-0" />
+                        <span className="truncate">
+                            {card.order_node?.package_node?.name || "Unknown Package"}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Right Column: Event & Contact Info */}
+                <div className="flex flex-col items-end gap-0.5 min-w-0 shrink-0 text-right pt-0.5 pr-1">
+                    {/* Event Name */}
+                    <span className="text-[10px] text-zinc-400 font-medium truncate max-w-[120px] mb-1" title={card.order_node?.event_node?.title}>
+                        {card.order_node?.event_node?.title}
                     </span>
-                )}
-            </div>
 
-            {/* Row 2: Package */}
-            <div className={`mb-2 inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[10px] font-medium max-w-full relative z-10 ${packageStyle}`}>
-                <Package className="w-3 h-3 opacity-70 shrink-0" />
-                <span className="truncate">
-                    {card.order_node?.package_node?.name || "Unknown Package"}
-                </span>
+                    {/* Phone */}
+                    {card.order_node?.user_node?.phone && (
+                        <div
+                            className="flex items-center justify-end gap-1.5 text-[9px] text-zinc-500 hover:text-zinc-300 cursor-pointer transition-colors group/info w-fit"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (card.order_node.user_node.phone) handleCopy(card.order_node.user_node.phone, "phone");
+                            }}
+                        >
+                            <span className="truncate max-w-[100px]">{card.order_node.user_node.phone}</span>
+                            <Phone className="w-3 h-3 shrink-0" />
+                        </div>
+                    )}
+
+                    {/* Email */}
+                    {card.order_node?.user_node?.email && (
+                        <div
+                            className="flex items-center justify-end gap-1.5 text-[9px] text-zinc-500 hover:text-zinc-300 cursor-pointer transition-colors group/info w-fit"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopy(card.order_node.user_node.email, "email");
+                            }}
+                        >
+                            <span className="truncate max-w-[120px]">{card.order_node.user_node.email}</span>
+                            <Mail className="w-3 h-3 shrink-0" />
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Row 3: Worker & Status Info */}

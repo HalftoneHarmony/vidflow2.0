@@ -7,12 +7,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { getAllPipelineCards } from "@/features/pipeline/queries";
 import { getAdminEvents } from "@/features/events/queries";
-import { getComprehensiveStats, getWeeklyStats } from "@/features/analytics/actions";
+import { getComprehensiveStats, getWeeklyStats, getPipelineBottleneck } from "@/features/analytics/actions";
 import { getActiveAnnouncements } from "@/features/admin/actions";
 import { format } from "date-fns";
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
 import { DashboardAnnouncementBanner } from "./announcement-banner";
+import { QuickActions } from "@/components/admin/dashboard/quick-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,8 @@ function RevenueStatCard({
     );
 }
 
+import { AnimatedCounter } from "@/components/animations/AnimatedCounter";
+
 // 📊 Stat Card Component
 function OperationalStatCard({
     label,
@@ -57,22 +60,36 @@ function OperationalStatCard({
     color?: "zinc" | "emerald" | "blue" | "amber" | "rose";
 }) {
     const colorStyles = {
-        zinc: "border-zinc-800 text-zinc-400",
-        emerald: "border-emerald-600/50 text-emerald-500",
-        blue: "border-blue-600/50 text-blue-500",
-        amber: "border-amber-600/50 text-amber-500",
-        rose: "border-rose-600/50 text-rose-500",
+        zinc: "border-zinc-800/60 text-zinc-400 hover:shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)]",
+        emerald: "border-emerald-500/30 text-emerald-500 hover:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)]",
+        blue: "border-blue-500/30 text-blue-500 hover:shadow-[0_0_20px_-5px_rgba(59,130,246,0.2)]",
+        amber: "border-amber-500/30 text-amber-500 hover:shadow-[0_0_20px_-5px_rgba(245,158,11,0.2)]",
+        rose: "border-rose-500/30 text-rose-500 hover:shadow-[0_0_20px_-5px_rgba(244,63,94,0.2)]",
+    };
+
+    const glowStyles = {
+        zinc: "bg-zinc-500/10",
+        emerald: "bg-emerald-500/10",
+        blue: "bg-blue-500/10",
+        amber: "bg-amber-500/10",
+        rose: "bg-rose-500/10",
     };
 
     return (
-        <div className={`glass-panel p-6 flex flex-col justify-between h-full bg-noise transition-all duration-300 hover:border-zinc-700/50 ${colorStyles[color].split(" ")[0]}`}>
-            <div className="flex justify-between items-start mb-4">
-                <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">{label}</span>
-                {icon && <span className={colorStyles[color].split(" ")[1]}>{icon}</span>}
+        <div className={`relative overflow-hidden p-6 flex flex-col justify-between h-full backdrop-blur-xl bg-black/40 border transition-all duration-500 group ${colorStyles[color].split(" ")[0]}`}>
+
+            {/* Gradient Glow Effect */}
+            <div className={`absolute top-0 right-0 w-32 h-32 blur-[50px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${glowStyles[color]}`} />
+
+            <div className="relative z-10 flex justify-between items-start mb-4">
+                <span className="text-xs font-bold uppercase tracking-widest text-zinc-500 group-hover:text-zinc-300 transition-colors">{label}</span>
+                {icon && <span className={`${colorStyles[color].split(" ")[1]} scale-100 group-hover:scale-110 transition-transform duration-300`}>{icon}</span>}
             </div>
-            <div>
-                <span className="text-4xl font-black text-white tracking-tight">{value}</span>
-                {subValue && <p className="text-xs text-zinc-500 mt-1 font-mono">{subValue}</p>}
+            <div className="relative z-10">
+                <span className="text-4xl font-black text-white tracking-tight">
+                    {typeof value === 'number' ? <AnimatedCounter value={value} /> : value}
+                </span>
+                {subValue && <p className="text-xs text-zinc-500 mt-1 font-mono group-hover:text-zinc-400 transition-colors">{subValue}</p>}
             </div>
         </div>
     );
@@ -163,12 +180,13 @@ export default async function DashboardPage() {
     const supabase = await createClient();
 
     // Data Fetching - 병렬 실행
-    const [pipelineCards, allEvents, comprehensiveStats, weeklyStats, announcements] = await Promise.all([
+    const [pipelineCards, allEvents, comprehensiveStats, weeklyStats, announcements, pipelineBottleneck] = await Promise.all([
         getAllPipelineCards(supabase),
         getAdminEvents(),
         getComprehensiveStats(),
         getWeeklyStats(),
         getActiveAnnouncements(),
+        getPipelineBottleneck(),
     ]);
 
     // Pipeline Stats (fallback to local calculation if DB function fails)
@@ -182,6 +200,7 @@ export default async function DashboardPage() {
     };
 
     const totalActive = stats.shooting + stats.editing + stats.ready;
+    const totalProductions = pipelineCards.length;
     const unassignedCount = stats.unassigned;
 
     // Upcoming Events
@@ -201,29 +220,34 @@ export default async function DashboardPage() {
         <DashboardClientWrapper
             banner={<DashboardAnnouncementBanner announcements={announcements} />}
             header={
-                <div className="flex justify-between items-end border-b border-zinc-800 pb-6">
-                    <div>
-                        <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
-                            Mission Control
-                        </h1>
-                        <p className="text-zinc-500 font-mono text-sm mt-1">
-                            Operational Status & Command Center
-                        </p>
+                <div className="space-y-6">
+                    <div className="flex justify-between items-end border-b border-zinc-800 pb-6">
+                        <div>
+                            <h1 className="text-4xl font-black text-white uppercase tracking-tighter">
+                                Mission Control
+                            </h1>
+                            <p className="text-zinc-500 font-mono text-sm mt-1">
+                                Operational Status & Command Center
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <Link
+                                href="/admin/events"
+                                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center"
+                            >
+                                + New Event
+                            </Link>
+                            <Link
+                                href="/admin/pipeline"
+                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center"
+                            >
+                                View Board
+                            </Link>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Link
-                            href="/admin/events"
-                            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center"
-                        >
-                            + New Event
-                        </Link>
-                        <Link
-                            href="/admin/pipeline"
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center"
-                        >
-                            View Board
-                        </Link>
-                    </div>
+
+                    {/* Quick Actions (Moved from Analytics) */}
+                    <QuickActions pipelineBottleneck={pipelineBottleneck} />
                 </div>
             }
             statsGrid={
@@ -235,6 +259,15 @@ export default async function DashboardPage() {
                             subValue="In Progress (Shoot/Edit/Review)"
                             color="blue"
                             icon={<div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
+                        />
+                    </AnimatedStatCard>
+                    <AnimatedStatCard>
+                        <OperationalStatCard
+                            label="Total Productions"
+                            value={totalProductions}
+                            subValue="All Time Volume"
+                            color="emerald"
+                            icon={<div className="w-2 h-2 rounded-full bg-emerald-500" />}
                         />
                     </AnimatedStatCard>
                     <AnimatedStatCard>
@@ -251,14 +284,6 @@ export default async function DashboardPage() {
                             value={stats.editing}
                             subValue="Post-Production Queue"
                             color="zinc"
-                        />
-                    </AnimatedStatCard>
-                    <AnimatedStatCard>
-                        <OperationalStatCard
-                            label="Needs Attention"
-                            value={unassignedCount}
-                            subValue="Unassigned Tasks"
-                            color={unassignedCount > 0 ? "rose" : "zinc"}
                         />
                     </AnimatedStatCard>
                 </>

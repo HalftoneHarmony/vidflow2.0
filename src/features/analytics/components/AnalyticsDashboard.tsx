@@ -19,7 +19,6 @@ import { EventComparisonChart, EventAnalyticsData } from "./EventComparisonChart
 import { BottleneckFunnelChart } from "./BottleneckFunnelChart";
 import { DisciplineAnalyticsChart, DisciplineStats, PackageStats } from "./DisciplineAnalyticsChart";
 import { KPIGoalsProgress, generateDefaultGoals } from "./KPIGoalsProgress";
-import { AnalyticsQuickActions } from "./AnalyticsQuickActions";
 import { ExpenseDetailSection } from "@/features/finance/components/ExpenseDetailSection";
 import { CostBreakdownChart } from "@/features/finance/components/FinanceCharts";
 import { MotionCard } from "@/components/ui/motion-card";
@@ -232,13 +231,6 @@ export function AnalyticsDashboard({
 
     return (
         <div className="space-y-6 max-w-[1600px] mx-auto">
-            {/* 0. Quick Actions & Alerts */}
-            <AnalyticsQuickActions
-                alerts={[]}
-                pipelineBottleneck={pipelineBottleneck}
-                onRefresh={() => window.location.reload()}
-            />
-
             {/* 1. KPI Goals Progress */}
             <MotionCard delay={0.1} className="p-0 border-none bg-transparent" hoverEffect={false}>
                 <KPIGoalsProgress goals={kpiGoals} />
@@ -283,7 +275,7 @@ export function AnalyticsDashboard({
             </div>
 
             {/* 2. Event Performance Comparison (Main) */}
-            <MotionCard delay={0.4} className="h-[400px] p-0 overflow-hidden border-none bg-transparent" hoverEffect={false}>
+            <MotionCard delay={0.4} className="p-0 overflow-visible border-none bg-transparent" hoverEffect={false}>
                 <EventComparisonChart
                     data={eventAnalytics}
                     onEventClick={(event) => {

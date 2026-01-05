@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { ScrollText, Filter, Calendar, User, ShoppingCart, Settings, FileEdit, LogIn, Plus, Trash, RefreshCw, ChevronDown, X, Loader2 } from "lucide-react";
+import { ScrollText, Filter, Calendar, User, ShoppingCart, Settings, FileEdit, LogIn, Plus, Trash, RefreshCw, ChevronDown, X, Loader2, ChevronRight, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { getRecentActivityLogs, type ActivityLog } from "@/features/admin/actions";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const actionConfig: Record<string, { icon: typeof ScrollText; color: string; label: string }> = {
     ORDER_CREATED: { icon: ShoppingCart, color: "bg-green-600", label: "주문 생성" },
@@ -26,6 +28,7 @@ export function LogsClient() {
     const [selectedActions, setSelectedActions] = useState<string[]>([]);
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
     const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
+    const [expandedLogId, setExpandedLogId] = useState<ActivityLog['id'] | null>(null);
 
     useEffect(() => {
         async function loadData() {
@@ -202,32 +205,93 @@ export function LogsClient() {
                                 <div className="relative pl-6">
                                     <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-zinc-700 via-zinc-800 to-transparent" />
                                     <div className="space-y-3">
-                                        {dateLogs.map((log) => {
-                                            const config = actionConfig[log.action] || defaultActionConfig;
-                                            const IconComponent = config.icon;
-                                            return (
-                                                <div key={log.id} className="relative group">
-                                                    <div className={`absolute -left-4 w-4 h-4 rounded-full ${config.color} border-2 border-zinc-900 flex items-center justify-center transition-transform group-hover:scale-125`}>
-                                                        <IconComponent className="w-2 h-2 text-white" />
-                                                    </div>
-                                                    <div className="ml-4 p-4 bg-zinc-800/30 border border-zinc-800/50 hover:border-zinc-700 transition-colors">
-                                                        <div className="flex items-start justify-between gap-4">
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 ${config.color}`}>{log.action}</span>
-                                                                    {log.entity_type && <span className="text-xs text-zinc-500">[{log.entity_type}]</span>}
+                                        <AnimatePresence mode="popLayout">
+                                            {dateLogs.map((log) => {
+                                                const config = actionConfig[log.action] || defaultActionConfig;
+                                                const IconComponent = config.icon;
+                                                const isExpanded = expandedLogId === log.id;
+
+                                                // Determine severity color for background tint
+                                                const isError = log.action.includes("DELETED") || log.action.includes("ERROR");
+                                                const isWarning = log.action.includes("UPDATED") || log.action.includes("CHANGED");
+                                                const bgClass = isError ? "bg-red-950/20 border-red-900/30" :
+                                                    isWarning ? "bg-amber-950/10 border-amber-900/20" :
+                                                        "bg-zinc-800/30 border-zinc-800/50";
+
+                                                return (
+                                                    <motion.div
+                                                        layout
+                                                        initial={{ opacity: 0, x: -20 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        exit={{ opacity: 0, x: 20 }}
+                                                        key={log.id}
+                                                        className={cn(
+                                                            "relative group overflow-hidden transition-all duration-300 rounded-sm border cursor-pointer",
+                                                            bgClass,
+                                                            isExpanded && "border-zinc-600 bg-zinc-800/80 shadow-lg"
+                                                        )}
+                                                        onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                                                    >
+                                                        {/* Selection Indicator on Left */}
+                                                        <motion.div
+                                                            className={cn("absolute left-0 top-0 bottom-0 w-1 transition-colors", config.color)}
+                                                            animate={{ width: isExpanded ? 4 : 2 }}
+                                                        />
+
+                                                        <div className="p-4 pl-6">
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                        <span className={cn("text-[10px] font-mono font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5", config.color, "bg-opacity-20 text-white border border-white/10")}>
+                                                                            <IconComponent className="w-3 h-3" />
+                                                                            {log.action}
+                                                                        </span>
+                                                                        {log.entity_type && <span className="text-xs text-zinc-500 font-mono">[{log.entity_type}]</span>}
+                                                                    </div>
+                                                                    <p className="text-sm text-zinc-300 font-medium">{log.entity_id || config.label}</p>
+                                                                    <div className="flex items-center gap-3 mt-2 text-xs text-zinc-500">
+                                                                        <span className="flex items-center gap-1 text-zinc-400"><User className="w-3 h-3" />{log.user_name || "System"}</span>
+                                                                    </div>
                                                                 </div>
-                                                                <p className="text-sm text-zinc-300">{log.entity_id || config.label}</p>
-                                                                <div className="flex items-center gap-3 mt-2 text-xs text-zinc-500">
-                                                                    <span className="flex items-center gap-1"><User className="w-3 h-3" />{log.user_name || "System"}</span>
+                                                                <div className="flex flex-col items-end gap-2">
+                                                                    <span className="text-xs text-zinc-500 font-mono">{formatTime(log.created_at)}</span>
+                                                                    <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} className="text-zinc-600">
+                                                                        <ChevronRight className="w-4 h-4" />
+                                                                    </motion.div>
                                                                 </div>
                                                             </div>
-                                                            <span className="text-xs text-zinc-500 whitespace-nowrap">{formatTime(log.created_at)}</span>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+
+                                                        {/* Expanded Details */}
+                                                        <AnimatePresence>
+                                                            {isExpanded && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    className="overflow-hidden border-t border-zinc-800/50 bg-black/20"
+                                                                >
+                                                                    <div className="p-4 grid grid-cols-2 gap-4 text-xs font-mono">
+                                                                        <div className="space-y-1">
+                                                                            <span className="text-zinc-500 block uppercase tracking-wider text-[10px]">Previous Value</span>
+                                                                            <div className="p-2 bg-red-950/10 border border-red-900/20 text-red-200 rounded min-h-[40px] break-all">
+                                                                                {log.old_value ? JSON.stringify(log.old_value, null, 2) : <span className="text-zinc-600 italic">None</span>}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <span className="text-zinc-500 block uppercase tracking-wider text-[10px]">New Value</span>
+                                                                            <div className="p-2 bg-emerald-950/10 border border-emerald-900/20 text-emerald-200 rounded min-h-[40px] break-all">
+                                                                                {log.new_value ? JSON.stringify(log.new_value, null, 2) : <span className="text-zinc-600 italic">None</span>}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </AnimatePresence>
                                     </div>
                                 </div>
                             </div>

@@ -1,12 +1,15 @@
 "use client";
 
 /**
- * 📊 Event Comparison Chart
- * 이벤트별 매출, 순이익, 주문 수 비교 분석
+ * 📊 Event Comparison Chart (Enhanced)
+ * 직관적인 이벤트별 성과 비교 (신청자수, 매출, 순수익)
+ * - 3D Bar Effect
+ * - Enhanced Tooltips
+ * - Smooth Animations
  * @author Agent 3 (Analytics Master)
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
     BarChart,
     Bar,
@@ -15,10 +18,10 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Legend,
-    ReferenceLine
+    Cell
 } from "recharts";
-import { Calendar, DollarSign, TrendingUp } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Percent, Filter, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ==========================================
 // Types
@@ -41,6 +44,8 @@ type Props = {
     onEventClick?: (event: EventAnalyticsData) => void;
 };
 
+type MetricType = "orders" | "revenue" | "profit" | "margin";
+
 // ==========================================
 // Utils
 // ==========================================
@@ -52,30 +57,52 @@ const currencyFormatter = (value: number) =>
         maximumFractionDigits: 0,
     }).format(value);
 
-const compactFormatter = (value: number) =>
-    new Intl.NumberFormat("ko-KR", { notation: "compact" }).format(value);
+const numberFormatter = (value: number) =>
+    new Intl.NumberFormat("ko-KR").format(value);
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, mode }: any) => {
     if (active && payload && payload.length) {
+        const data = payload[0].payload;
         return (
-            <div className="bg-zinc-950/95 border border-zinc-800 p-4 rounded-lg shadow-2xl backdrop-blur-md z-50">
-                <p className="text-zinc-300 font-bold mb-3 border-b border-zinc-800 pb-2">{label}</p>
-                <div className="space-y-2">
-                    {payload.map((entry: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between gap-4 min-w-[200px]">
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                                <span className="text-zinc-400 text-xs uppercase">{entry.name}</span>
-                            </div>
-                            <span className="text-white font-mono font-bold text-sm">
-                                {typeof entry.value === 'number' && entry.name !== 'Total Orders'
-                                    ? currencyFormatter(entry.value)
-                                    : entry.value}
-                            </span>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9, x: 10 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                className="bg-zinc-950/90 border border-zinc-800 p-4 rounded-xl shadow-2xl backdrop-blur-xl ring-1 ring-white/10 z-50 min-w-[200px]"
+            >
+                <p className="font-bold text-white mb-3 border-b border-white/10 pb-2 text-sm">
+                    {data.event_title}
+                </p>
+                <div className="space-y-2 font-mono text-xs">
+                    <div className="flex justify-between items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="text-zinc-400">Revenue</span>
                         </div>
-                    ))}
+                        <span className="text-white font-bold">{currencyFormatter(data.gross_revenue)}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            <span className="text-zinc-400">Net Profit</span>
+                        </div>
+                        <span className="text-emerald-400 font-bold">{currencyFormatter(data.net_profit)}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            <span className="text-zinc-400">Applicants</span>
+                        </div>
+                        <span className="text-blue-400 font-bold">{data.total_orders}명</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-4 pt-2 border-t border-white/5 mt-2">
+                        <div className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <span className="text-zinc-400">Margin</span>
+                        </div>
+                        <span className="text-amber-400 font-bold">{data.profit_margin}%</span>
+                    </div>
                 </div>
-            </div>
+            </motion.div>
         );
     }
     return null;
@@ -86,86 +113,252 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 // ==========================================
 
 export function EventComparisonChart({ data, onEventClick }: Props) {
-    const [sortBy, setSortBy] = useState<"date" | "revenue" | "profit" | "orders">("date");
+    const [metric, setMetric] = useState<MetricType>("profit");
+    const [selectedEventIds, setSelectedEventIds] = useState<Set<number>>(new Set());
+    const [showEventSelector, setShowEventSelector] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
-    // Process and sort data
-    const chartData = [...data].sort((a, b) => {
-        if (sortBy === "revenue") return b.gross_revenue - a.gross_revenue;
-        if (sortBy === "profit") return b.net_profit - a.net_profit;
-        if (sortBy === "orders") return b.total_orders - a.total_orders;
-        return new Date(b.event_date).getTime() - new Date(a.event_date).getTime(); // Default: Newest first
-    }).slice(0, 10); // Show top 10 only
+    // 1. Prepare Data with profit margin calculation
+    const chartData = useMemo(() => data.map(e => ({
+        ...e,
+        profit_margin: e.gross_revenue > 0 ? Math.round((e.net_profit / e.gross_revenue) * 100) : 0
+    })), [data]);
 
-    if (data.length === 0) {
-        return (
-            <div className="bg-zinc-900/50 border border-zinc-800 p-6 flex flex-col items-center justify-center min-h-[400px]">
-                <div className="text-center text-zinc-500">
-                    <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-sm uppercase tracking-wider">이벤트 데이터 없음</p>
-                </div>
-            </div>
-        );
-    }
+    // 2. Sort Data by Selected Metric
+    const sortedData = useMemo(() => {
+        let filtered = [...chartData];
 
-    const isOrderView = sortBy === "orders";
+        // If specific events are selected, filter by them
+        if (selectedEventIds.size > 0) {
+            filtered = filtered.filter(e => selectedEventIds.has(e.event_id));
+        }
+
+        return filtered.sort((a, b) => {
+            if (metric === "revenue") return b.gross_revenue - a.gross_revenue;
+            if (metric === "profit") return b.net_profit - a.net_profit;
+            if (metric === "orders") return b.total_orders - a.total_orders;
+            if (metric === "margin") return b.profit_margin! - a.profit_margin!;
+            return 0;
+        });
+    }, [chartData, selectedEventIds, metric]);
+
+    // Determine display data - if not expanded, show max 8 events for compact view
+    const displayData = isExpanded ? sortedData : sortedData.slice(0, 8);
+    const hasMoreEvents = sortedData.length > 8;
+
+    // Dynamic height based on number of events displayed
+    const chartHeight = Math.max(300, displayData.length * 40 + 50);
+
+    // 3. Config based on Metric
+    const config = {
+        orders: {
+            label: "Applicants",
+            color: "#3b82f6",
+            gradientId: "ordersGradient",
+            icon: Users,
+            formatter: (v: number) => `${numberFormatter(v)}명`
+        },
+        revenue: {
+            label: "Gross Revenue",
+            color: "#10b981",
+            gradientId: "revenueGradient",
+            icon: DollarSign,
+            formatter: currencyFormatter
+        },
+        profit: {
+            label: "Net Profit",
+            color: "#059669",
+            gradientId: "profitGradient",
+            icon: TrendingUp,
+            formatter: currencyFormatter
+        },
+        margin: {
+            label: "Profit Margin",
+            color: "#f59e0b",
+            gradientId: "marginGradient",
+            icon: Percent,
+            formatter: (v: number) => `${v}%`
+        },
+    };
+
+    const currentConfig = config[metric];
+    const Icon = currentConfig.icon;
+
+    // Event selection handlers
+    const toggleEventSelection = (eventId: number) => {
+        setSelectedEventIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(eventId)) {
+                newSet.delete(eventId);
+            } else {
+                newSet.add(eventId);
+            }
+            return newSet;
+        });
+    };
+
+    const selectAllEvents = () => {
+        setSelectedEventIds(new Set(chartData.map(e => e.event_id)));
+    };
+
+    const clearSelection = () => {
+        setSelectedEventIds(new Set());
+    };
 
     return (
-        <div className="bg-zinc-900/50 border border-zinc-800 p-6 relative overflow-hidden h-full rounded-2xl">
-            {/* Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/5 to-transparent pointer-events-none" />
+        <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl flex flex-col relative group">
+            {/* Background Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/5 to-transparent pointer-events-none group-hover:from-emerald-600/10 transition-colors duration-500" />
 
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 relative z-10">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center rounded-lg shadow-lg shadow-emerald-900/20">
-                        {isOrderView ? <TrendingUp className="w-5 h-5 text-white" /> : <DollarSign className="w-5 h-5 text-white" />}
+            {/* Header & Controls */}
+            <div className="flex flex-col gap-5 mb-2 relative z-10">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 shadow-lg shadow-black/20 ring-1 ring-white/10`}>
+                            <Icon className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wide">
+                                Event Comparison
+                            </h3>
+                            <p className="text-xs text-zinc-400 font-medium">
+                                {selectedEventIds.size > 0
+                                    ? `${selectedEventIds.size} Events Selected`
+                                    : `Comparing Top ${Math.min(displayData.length, 8)} Events`
+                                }
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-white font-[family-name:var(--font-oswald)] uppercase">
-                            Event Performance
-                        </h3>
-                        <p className="text-xs text-zinc-500">
-                            {isOrderView ? "이벤트별 신청 건수 비교 (Top 10)" : "이벤트별 실적 비교 (Top 10)"}
-                        </p>
+
+                    {/* Controls Row */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                        {/* Event Filter Button */}
+                        <button
+                            onClick={() => setShowEventSelector(!showEventSelector)}
+                            className={`
+                                flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase rounded-lg transition-all border
+                                ${showEventSelector || selectedEventIds.size > 0
+                                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                    : "bg-zinc-900 text-zinc-400 border-zinc-700 hover:border-zinc-500 hover:text-zinc-300"
+                                }
+                            `}
+                        >
+                            <Filter className="w-3.5 h-3.5" />
+                            Filter
+                            {selectedEventIds.size > 0 && (
+                                <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/30 rounded text-[10px]">
+                                    {selectedEventIds.size}
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Segmented Control */}
+                        <div className="flex p-1 bg-zinc-950/50 rounded-lg border border-zinc-800 backdrop-blur-sm">
+                            {(Object.keys(config) as MetricType[]).map((key) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setMetric(key)}
+                                    className={`
+                                        px-3 py-1.5 text-xs font-bold uppercase rounded-md transition-all
+                                        ${metric === key
+                                            ? "bg-zinc-800 text-white shadow-sm ring-1 ring-white/10"
+                                            : "text-zinc-500 hover:text-zinc-300"}
+                                    `}
+                                >
+                                    {config[key].label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                {/* Sort Controls */}
-                <div className="flex items-center gap-1 bg-zinc-800/50 p-1 border border-zinc-700 rounded-lg">
-                    <button
-                        onClick={() => setSortBy("date")}
-                        className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${sortBy === "date" ? "bg-zinc-600 text-white shadow-lg" : "text-zinc-400 hover:text-white"}`}
-                    >
-                        최신순
-                    </button>
-                    <button
-                        onClick={() => setSortBy("orders")}
-                        className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${sortBy === "orders" ? "bg-blue-600 text-white shadow-lg" : "text-zinc-400 hover:text-white"}`}
-                    >
-                        신청순
-                    </button>
-                    <button
-                        onClick={() => setSortBy("revenue")}
-                        className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${sortBy === "revenue" ? "bg-emerald-600 text-white shadow-lg" : "text-zinc-400 hover:text-white"}`}
-                    >
-                        매출순
-                    </button>
-                    <button
-                        onClick={() => setSortBy("profit")}
-                        className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-all rounded-md ${sortBy === "profit" ? "bg-emerald-600 text-white shadow-lg" : "text-zinc-400 hover:text-white"}`}
-                    >
-                        수익순
-                    </button>
-                </div>
+                {/* Event Selector Panel */}
+                <AnimatePresence>
+                    {showEventSelector && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="p-4 bg-zinc-950/80 rounded-xl border border-zinc-800 backdrop-blur-sm">
+                                {/* Quick Actions */}
+                                <div className="flex items-center justify-between mb-3 pb-3 border-b border-zinc-800">
+                                    <span className="text-xs text-zinc-500 uppercase font-bold">비교할 대회 선택</span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={selectAllEvents}
+                                            className="text-xs text-zinc-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-zinc-800"
+                                        >
+                                            전체 선택
+                                        </button>
+                                        <button
+                                            onClick={clearSelection}
+                                            className="text-xs text-zinc-400 hover:text-white transition-colors px-2 py-1 rounded hover:bg-zinc-800"
+                                        >
+                                            선택 해제
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Event Checkboxes Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                                    {chartData.map((event) => (
+                                        <button
+                                            key={event.event_id}
+                                            onClick={() => toggleEventSelection(event.event_id)}
+                                            className={`
+                                                flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all text-xs
+                                                ${selectedEventIds.has(event.event_id)
+                                                    ? "bg-emerald-500/20 border border-emerald-500/30 text-white"
+                                                    : "bg-zinc-900/50 border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300"
+                                                }
+                                            `}
+                                        >
+                                            <div className={`
+                                                w-4 h-4 rounded border flex items-center justify-center flex-shrink-0
+                                                ${selectedEventIds.has(event.event_id)
+                                                    ? "bg-emerald-500 border-emerald-500"
+                                                    : "border-zinc-600"
+                                                }
+                                            `}>
+                                                {selectedEventIds.has(event.event_id) && (
+                                                    <Check className="w-3 h-3 text-white" />
+                                                )}
+                                            </div>
+                                            <span className="truncate flex-1">{event.event_title}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {selectedEventIds.size > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-zinc-800 flex items-center justify-between">
+                                        <span className="text-xs text-zinc-500">
+                                            {selectedEventIds.size}개 대회가 선택되었습니다
+                                        </span>
+                                        <button
+                                            onClick={() => setShowEventSelector(false)}
+                                            className="text-xs text-emerald-400 hover:text-emerald-300 font-bold uppercase px-3 py-1 rounded hover:bg-emerald-500/10 transition-colors"
+                                        >
+                                            적용하기
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
-            {/* Chart */}
-            <div className="h-[300px] w-full relative z-10">
-                <ResponsiveContainer width="100%" height="100%" minHeight={280}>
+            {/* Chart Area with dynamic height */}
+            <div className="w-full relative z-0" style={{ height: chartHeight }}>
+                <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                        data={chartData}
-                        margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-                        barSize={isOrderView ? 40 : 20}
+                        data={displayData}
+                        layout="vertical"
+                        margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                        barSize={20}
                         onClick={(data: any) => {
                             if (data && data.activePayload && data.activePayload.length > 0) {
                                 onEventClick?.(data.activePayload[0].payload as EventAnalyticsData);
@@ -174,80 +367,78 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
                         className="cursor-pointer"
                     >
                         <defs>
-                            <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#34d399" stopOpacity={1} />
+                            <linearGradient id="ordersGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.6} />
+                                <stop offset="100%" stopColor="#3b82f6" stopOpacity={1} />
+                            </linearGradient>
+                            <linearGradient id="revenueGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity={0.6} />
+                                <stop offset="100%" stopColor="#10b981" stopOpacity={1} />
+                            </linearGradient>
+                            <linearGradient id="profitGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#059669" stopOpacity={0.6} />
                                 <stop offset="100%" stopColor="#059669" stopOpacity={1} />
                             </linearGradient>
-                            <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
-                                <stop offset="100%" stopColor="#047857" stopOpacity={1} />
-                            </linearGradient>
-                            <linearGradient id="orderGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#60a5fa" stopOpacity={1} />
-                                <stop offset="100%" stopColor="#2563eb" stopOpacity={1} />
+                            <linearGradient id="marginGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.6} />
+                                <stop offset="100%" stopColor="#f59e0b" stopOpacity={1} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" vertical={false} />
-                        <XAxis
-                            dataKey="event_title"
-                            stroke="#52525b"
-                            tick={{ fill: "#71717a", fontSize: 11 }}
-                            tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(val) => val.length > 10 ? `${val.substring(0, 8)}...` : val}
-                        />
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#ffffff05" />
+                        <XAxis type="number" hide />
                         <YAxis
-                            stroke="#52525b"
-                            tick={{ fill: "#71717a", fontSize: 11, fontFamily: "monospace" }}
+                            dataKey="event_title"
+                            type="category"
+                            width={160}
+                            tick={{ fill: "#a1a1aa", fontSize: 11, fontWeight: 500 }}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={isOrderView ? (val) => val : compactFormatter}
+                            tickFormatter={(val) => val.length > 20 ? `${val.substring(0, 20)}...` : val}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: "#ffffff05" }} />
-                        <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
-                        <ReferenceLine y={0} stroke="#52525b" />
-
-                        {isOrderView ? (
-                            <Bar
-                                dataKey="total_orders"
-                                name="Total Orders"
-                                fill="url(#orderGradient)"
-                                radius={[4, 4, 0, 0]}
-                            />
-                        ) : (
-                            <>
-                                <Bar
-                                    dataKey="gross_revenue"
-                                    name="Total Revenue"
-                                    fill="url(#revenueGradient)"
-                                    radius={[4, 4, 0, 0]}
-                                    opacity={0.6}
+                        <Tooltip
+                            content={<CustomTooltip mode={metric} />}
+                            cursor={{ fill: "#ffffff05" }}
+                        />
+                        <Bar
+                            dataKey={
+                                metric === "orders" ? "total_orders" :
+                                    metric === "revenue" ? "gross_revenue" :
+                                        metric === "profit" ? "net_profit" : "profit_margin"
+                            }
+                            radius={[0, 4, 4, 0]}
+                            animationDuration={1500}
+                            animationEasing="ease-out"
+                        >
+                            {displayData.map((entry, index) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={`url(#${currentConfig.gradientId})`}
+                                    opacity={1} // Adjusted to full opacity since we use gradients
                                 />
-                                <Bar
-                                    dataKey="net_profit"
-                                    name="Net Profit"
-                                    fill="url(#profitGradient)"
-                                    radius={[4, 4, 0, 0]}
-                                />
-                            </>
-                        )}
+                            ))}
+                        </Bar>
                     </BarChart>
                 </ResponsiveContainer>
             </div>
 
-            {/* Top Analysis Footer (Dynamic) */}
-            {chartData.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                        <span className="text-zinc-500">{isOrderView ? "최다 신청 이벤트:" : "최고 수익 이벤트:"}</span>
-                        <span className={isOrderView ? "text-blue-500 font-bold" : "text-emerald-500 font-bold"}>
-                            {isOrderView
-                                ? chartData.reduce((prev, current) => (prev.total_orders > current.total_orders) ? prev : current).event_title
-                                : chartData.reduce((prev, current) => (prev.net_profit > current.net_profit) ? prev : current).event_title
-                            }
-                        </span>
-                    </div>
-                </div>
+            {/* Expand/Collapse Button */}
+            {hasMoreEvents && selectedEventIds.size === 0 && (
+                <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="mt-4 flex items-center justify-center gap-2 py-2 px-4 mx-auto text-xs font-bold text-zinc-400 hover:text-white bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 rounded-lg transition-all relative z-10"
+                >
+                    {isExpanded ? (
+                        <>
+                            <ChevronUp className="w-4 h-4" />
+                            접기 (상위 8개만 보기)
+                        </>
+                    ) : (
+                        <>
+                            <ChevronDown className="w-4 h-4" />
+                            전체 {sortedData.length}개 대회 보기
+                        </>
+                    )}
+                </button>
             )}
         </div>
     );

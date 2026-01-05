@@ -38,9 +38,9 @@ export function KanbanFilters({ filters, onFilterChange, events, assignees, pack
             </div>
 
             {/* Filters Group */}
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
                 {/* Event Filter */}
-                <div className="flex-1 sm:flex-none sm:w-[140px] min-w-[120px]">
+                <div className="flex-1 sm:flex-none min-w-[150px]">
                     <Select
                         value={filters.eventId}
                         onValueChange={(value) => onFilterChange({ eventId: value })}
@@ -63,7 +63,7 @@ export function KanbanFilters({ filters, onFilterChange, events, assignees, pack
                 </div>
 
                 {/* Package Filter */}
-                <div className="flex-1 sm:flex-none sm:w-[140px] min-w-[120px]">
+                <div className="flex-1 sm:flex-none min-w-[150px]">
                     <Select
                         value={filters.packageId}
                         onValueChange={(value) => onFilterChange({ packageId: value })}
@@ -76,9 +76,9 @@ export function KanbanFilters({ filters, onFilterChange, events, assignees, pack
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-950 border-zinc-800">
                             <SelectItem value="ALL" className="text-xs font-bold text-zinc-400 focus:bg-zinc-900 focus:text-zinc-200">ALL PACKAGES</SelectItem>
-                            {packages.map((p) => (
-                                <SelectItem key={p.id} value={String(p.id)} className="text-xs text-zinc-400 focus:bg-zinc-900 focus:text-zinc-200">
-                                    {p.name}
+                            {Array.from(new Set(packages.map(p => p.name))).map((name) => (
+                                <SelectItem key={name} value={name} className="text-xs text-zinc-400 focus:bg-zinc-900 focus:text-zinc-200">
+                                    {name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -86,7 +86,7 @@ export function KanbanFilters({ filters, onFilterChange, events, assignees, pack
                 </div>
 
                 {/* Assignee Filter */}
-                <div className="flex-1 sm:flex-none sm:w-[140px] min-w-[120px]">
+                <div className="flex-1 sm:flex-none min-w-[150px]">
                     <Select
                         value={filters.assigneeId}
                         onValueChange={(value) => onFilterChange({ assigneeId: value })}

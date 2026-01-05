@@ -5,6 +5,7 @@
  */
 
 import { ProfitSummary } from "../queries";
+import { MoneyTicker } from "./MoneyTicker";
 
 // ============================================
 // Types
@@ -86,19 +87,21 @@ export function ProfitSummaryCard({ title, profit, showDetails = true }: ProfitS
         }).format(value);
 
     return (
-        <div className="bg-zinc-900 border border-zinc-800 p-6 relative overflow-hidden">
-            {/* Heavy Metal 테마 - 대각선 장식 */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-yellow-500/10 to-transparent" />
+        <div className="bg-zinc-900 border border-zinc-800 p-6 relative overflow-hidden group hover:border-zinc-700 transition-colors duration-500">
+            {/* Heavy Metal 테마 - 대각선 장식 & Glow */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-yellow-500/10 to-transparent transition-opacity duration-500 group-hover:from-yellow-500/20" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-yellow-500/5 to-transparent blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
             {/* Header */}
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-6 relative z-10">
                 <div>
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
+                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                         {title}
+                        <span className="w-1 h-1 rounded-full bg-yellow-500 animate-pulse" />
                     </h3>
-                    <p className="text-3xl font-black font-mono text-white">
-                        {formatCurrency(profit.netProfit)}
-                    </p>
+                    <div className="text-3xl font-black text-white flex items-baseline gap-1">
+                        <MoneyTicker value={profit.netProfit} />
+                    </div>
                 </div>
                 <ProfitIndicator
                     netProfit={profit.netProfit}
@@ -106,27 +109,35 @@ export function ProfitSummaryCard({ title, profit, showDetails = true }: ProfitS
                 />
             </div>
 
-            {/* Net Profit Formula Visual */}
-            <div className="mb-6 p-4 bg-black/50 border border-zinc-800">
-                <div className="text-xs text-zinc-500 mb-2 font-mono">순수익 공식</div>
+            {/* Net Profit Formula Visual - Floating Card Effect */}
+            <div className="mb-6 p-4 bg-black/40 border border-zinc-800 backdrop-blur-sm rounded-lg hover:bg-black/60 transition-colors duration-300 hover:shadow-lg hover:shadow-black/50 hover:-translate-y-0.5 transform">
+                <div className="text-[10px] text-zinc-500 mb-3 font-mono uppercase tracking-widest">Net Profit Formula</div>
                 <div className="flex items-center gap-2 text-sm font-mono flex-wrap">
-                    <span className="text-emerald-400">{formatCurrency(profit.totalRevenue)}</span>
+                    <span className="text-emerald-400 hover:scale-110 transition-transform cursor-help" title="Total Revenue">
+                        <MoneyTicker value={profit.totalRevenue} />
+                    </span>
                     <span className="text-zinc-600">-</span>
-                    <span className="text-red-400">{formatCurrency(profit.pgFees)}</span>
+                    <span className="text-red-400 hover:scale-110 transition-transform cursor-help" title="PG Fees">
+                        <MoneyTicker value={profit.pgFees} />
+                    </span>
                     <span className="text-zinc-600">-</span>
-                    <span className="text-red-400">{formatCurrency(profit.fixedExpenses)}</span>
+                    <span className="text-red-400 hover:scale-110 transition-transform cursor-help" title="Fixed Expenses">
+                        <MoneyTicker value={profit.fixedExpenses} />
+                    </span>
                     <span className="text-zinc-600">-</span>
-                    <span className="text-red-400">{formatCurrency(profit.laborCosts)}</span>
+                    <span className="text-red-400 hover:scale-110 transition-transform cursor-help" title="Labor Costs">
+                        <MoneyTicker value={profit.laborCosts} />
+                    </span>
                     <span className="text-zinc-600">=</span>
-                    <span className={`font-bold ${profit.netProfit >= 0 ? "text-yellow-400" : "text-red-500"}`}>
-                        {formatCurrency(profit.netProfit)}
+                    <span className={`font-bold border-b-2 border-dashed ${profit.netProfit >= 0 ? "text-yellow-400 border-yellow-500/50" : "text-red-500 border-red-500/50"}`}>
+                        <MoneyTicker value={profit.netProfit} />
                     </span>
                 </div>
             </div>
 
             {/* Detailed Breakdown */}
             {showDetails && (
-                <div className="space-y-1">
+                <div className="space-y-1 relative z-10">
                     <StatItem
                         label="총 매출"
                         value={profit.totalRevenue}
@@ -147,7 +158,7 @@ export function ProfitSummaryCard({ title, profit, showDetails = true }: ProfitS
                         value={profit.laborCosts}
                         type="expense"
                     />
-                    <div className="pt-3 mt-3 border-t-2 border-zinc-700">
+                    <div className="pt-3 mt-3 border-t-2 border-zinc-800">
                         <StatItem
                             label="순수익"
                             value={profit.netProfit}
@@ -165,23 +176,23 @@ export function ProfitSummaryCard({ title, profit, showDetails = true }: ProfitS
 
             {/* Quick Stats Bar */}
             <div className="mt-6 pt-4 border-t border-zinc-800 grid grid-cols-3 gap-4">
-                <div className="text-center">
-                    <div className="text-lg font-bold text-white font-mono">
+                <div className="text-center group/stat hover:bg-zinc-800/50 rounded py-2 transition-colors">
+                    <div className="text-lg font-bold text-white font-mono group-hover/stat:text-emerald-400 transition-colors">
                         {Math.round((profit.pgFees / profit.totalRevenue) * 100) || 0}%
                     </div>
-                    <div className="text-xs text-zinc-500">PG 비율</div>
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider">PG Ratio</div>
                 </div>
-                <div className="text-center">
-                    <div className="text-lg font-bold text-white font-mono">
+                <div className="text-center group/stat hover:bg-zinc-800/50 rounded py-2 transition-colors">
+                    <div className="text-lg font-bold text-white font-mono group-hover/stat:text-blue-400 transition-colors">
                         {Math.round((profit.laborCosts / profit.totalRevenue) * 100) || 0}%
                     </div>
-                    <div className="text-xs text-zinc-500">인건비 비율</div>
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Labor</div>
                 </div>
-                <div className="text-center">
-                    <div className="text-lg font-bold text-white font-mono">
+                <div className="text-center group/stat hover:bg-zinc-800/50 rounded py-2 transition-colors">
+                    <div className="text-lg font-bold text-white font-mono group-hover/stat:text-purple-400 transition-colors">
                         {Math.round((profit.fixedExpenses / profit.totalRevenue) * 100) || 0}%
                     </div>
-                    <div className="text-xs text-zinc-500">고정비 비율</div>
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Fixed</div>
                 </div>
             </div>
         </div>
@@ -205,11 +216,11 @@ export function ProfitTicker({
     const isUp = trend >= 0;
 
     return (
-        <div className="flex items-center gap-4 px-4 py-2 bg-black border-l-4 border-yellow-500">
+        <div className="flex items-center gap-4 px-4 py-2 bg-black border-l-4 border-yellow-500 animate-in fade-in slide-in-from-bottom-2">
             <div className="flex items-center gap-2">
                 <span className="text-xs text-zinc-500 uppercase tracking-wider">순수익</span>
                 <span className={`text-xl font-black font-mono ${isProfit ? "text-yellow-400" : "text-red-500"}`}>
-                    {new Intl.NumberFormat("ko-KR", { style: "currency", currency: "KRW", maximumFractionDigits: 0 }).format(netProfit)}
+                    <MoneyTicker value={netProfit} />
                 </span>
             </div>
             <div className="h-6 w-px bg-zinc-700" />
@@ -223,7 +234,7 @@ export function ProfitTicker({
                 <>
                     <div className="h-6 w-px bg-zinc-700" />
                     <div className={`flex items-center gap-1 text-sm font-bold ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-                        <span>{isUp ? "▲" : "▼"}</span>
+                        <span className={isUp ? "animate-bounce-up" : "animate-bounce-down"}>{isUp ? "▲" : "▼"}</span>
                         <span>{Math.abs(trend)}%</span>
                     </div>
                 </>

@@ -18,10 +18,27 @@ import { DeliverableWithDetails } from "../queries";
 import { verifyLink } from "../actions";
 import { LinkInputModal } from "./LinkInputModal";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface DeliveryTableProps {
     data: DeliverableWithDetails[];
 }
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.05
+        }
+    }
+};
+
+const rowVariants = {
+    hidden: { opacity: 0, x: -10 },
+    visible: { opacity: 1, x: 0 }
+};
 
 export function DeliveryTable({ data }: DeliveryTableProps) {
     const router = useRouter();
@@ -100,6 +117,8 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
         router.refresh();
     };
 
+    const MotionTableRow = motion(TableRow);
+
     return (
         <div className="space-y-4">
             {/* Toolbar */}
@@ -136,19 +155,24 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
             </div>
 
             {/* Table */}
-            <div className="border border-zinc-800 rounded-md overflow-hidden">
+            <div className="border border-zinc-800 rounded-md overflow-hidden bg-[#0A0A0A]">
                 <Table>
                     <TableHeader className="bg-zinc-900/80">
                         <TableRow className="border-zinc-800 hover:bg-zinc-900/80">
-                            <TableHead className="text-zinc-400 font-medium">Order ID</TableHead>
-                            <TableHead className="text-zinc-400 font-medium">Customer</TableHead>
-                            <TableHead className="text-zinc-400 font-medium">Deliverable</TableHead>
-                            <TableHead className="text-zinc-400 font-medium">Link Status</TableHead>
-                            <TableHead className="text-zinc-400 font-medium text-center">Received</TableHead>
-                            <TableHead className="text-zinc-400 font-medium text-right">Actions</TableHead>
+                            <TableHead className="text-zinc-400 font-medium font-[family-name:var(--font-oswald)] uppercase tracking-wide">Order ID</TableHead>
+                            <TableHead className="text-zinc-400 font-medium font-[family-name:var(--font-oswald)] uppercase tracking-wide">Customer</TableHead>
+                            <TableHead className="text-zinc-400 font-medium font-[family-name:var(--font-oswald)] uppercase tracking-wide">Deliverable</TableHead>
+                            <TableHead className="text-zinc-400 font-medium font-[family-name:var(--font-oswald)] uppercase tracking-wide">Link Status</TableHead>
+                            <TableHead className="text-zinc-400 font-medium font-[family-name:var(--font-oswald)] uppercase tracking-wide text-center">Received</TableHead>
+                            <TableHead className="text-zinc-400 font-medium font-[family-name:var(--font-oswald)] uppercase tracking-wide text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <motion.tbody
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="[&_tr:last-child]:border-0"
+                    >
                         {filteredData.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center text-zinc-500">
@@ -157,13 +181,17 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
                             </TableRow>
                         ) : (
                             filteredData.map((item) => (
-                                <TableRow key={item.id} className="border-zinc-800 hover:bg-zinc-900/30">
-                                    <TableCell className="font-mono text-zinc-300">
+                                <MotionTableRow
+                                    key={item.id}
+                                    variants={rowVariants}
+                                    className="group border-zinc-800/50 transition-all duration-200 border-l-[3px] border-l-transparent hover:bg-white/[0.02] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:border-l-red-600 hover:-translate-y-[1px]"
+                                >
+                                    <TableCell className="font-mono text-zinc-300 font-bold">
                                         #{item.card?.order?.id}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-sm font-medium text-zinc-200">
+                                            <span className="text-sm font-medium text-zinc-200 group-hover:text-red-400 transition-colors">
                                                 {item.card?.order?.user?.name || "Unknown"}
                                             </span>
                                             <div className="flex flex-col text-xs text-zinc-500 gap-0.5">
@@ -194,7 +222,7 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
                                                 <Badge
                                                     variant="secondary"
                                                     className={`
-                                                        ${item.link_status === 'VALID' ? 'bg-green-900/20 text-green-400 border-green-900/50' :
+                                                        ${item.link_status === 'VALID' ? 'bg-green-900/20 text-green-400 border-green-900/50 badge-shimmer' :
                                                             item.link_status === 'INVALID' ? 'bg-red-900/20 text-red-400 border-red-900/50' :
                                                                 'bg-amber-900/20 text-amber-400 border-amber-900/50'
                                                         } border
@@ -213,7 +241,7 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
                                     <TableCell className="text-center">
                                         {item.is_downloaded ? (
                                             <div className="flex flex-col items-center">
-                                                <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20 gap-1">
+                                                <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20 gap-1 badge-shimmer">
                                                     <CheckCircle className="w-3 h-3" /> Received
                                                 </Badge>
                                                 {item.first_downloaded_at && (
@@ -227,7 +255,7 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                                        <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                                             {item.external_link_url && (
                                                 <Button
                                                     variant="ghost"
@@ -254,27 +282,35 @@ export function DeliveryTable({ data }: DeliveryTableProps) {
                                             </Button>
                                         </div>
                                     </TableCell>
-                                </TableRow>
+                                </MotionTableRow>
                             ))
                         )}
-                    </TableBody>
+                    </motion.tbody>
                 </Table>
             </div>
 
             {/* Link Input Modal */}
-            {editingDeliverable && (
-                <LinkInputModal
-                    isOpen={!!editingDeliverable}
-                    onClose={() => setEditingDeliverable(null)}
-                    deliverableId={editingDeliverable.id}
-                    deliverableType={editingDeliverable.type}
-                    currentLink={editingDeliverable.link}
-                    onSuccess={(status) => {
-                        toast.success(`Link saved: ${status}`);
-                        router.refresh();
-                    }}
-                />
-            )}
+            <AnimatePresence>
+                {editingDeliverable && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <LinkInputModal
+                            isOpen={!!editingDeliverable}
+                            onClose={() => setEditingDeliverable(null)}
+                            deliverableId={editingDeliverable.id}
+                            deliverableType={editingDeliverable.type}
+                            currentLink={editingDeliverable.link}
+                            onSuccess={(status) => {
+                                toast.success(`Link saved: ${status}`);
+                                router.refresh();
+                            }}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

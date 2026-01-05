@@ -60,8 +60,16 @@ export async function createPackage(input: CreatePackageInput) {
 export async function updatePackage(id: number, input: UpdatePackageInput) {
     const supabase = await createClient();
 
-    // event_ids는 update 시 별도 로직이 필요할 수 있으나, 여기서는 단일 패키지 수정으로 간주
-    const { event_ids, ...updateData } = input;
+    // 입력 데이터에서 업데이트 가능한 필드만 추출
+    // event_id는 패키지 이동에 해당하므로, 현재 모달에서는 수정을 제한합니다.
+    const { name, price, description, composition, is_sold_out } = input as any;
+
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (price !== undefined) updateData.price = price;
+    if (description !== undefined) updateData.description = description;
+    if (composition !== undefined) updateData.composition = composition;
+    if (is_sold_out !== undefined) updateData.is_sold_out = is_sold_out;
 
     try {
         const { error } = await supabase
@@ -73,9 +81,14 @@ export async function updatePackage(id: number, input: UpdatePackageInput) {
 
         revalidatePath("/admin/products");
         return { success: true };
-    } catch (error) {
-        console.error("[Products] Update Error:", error);
-        return { success: false, error: "패키지 수정 실패" };
+    } catch (error: any) {
+        console.error("[Products] Update Error Details:", {
+            id,
+            error: error?.message || error,
+            code: error?.code,
+            details: error?.details
+        });
+        return { success: false, error: error?.message || "패키지 수정 실패" };
     }
 }
 

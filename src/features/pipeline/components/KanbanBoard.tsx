@@ -103,7 +103,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors, st
                 eventFilter === "ALL" || String(card.order_node?.event_id) === eventFilter;
 
             const matchesPackage =
-                packageFilter === "ALL" || String(card.order_node?.package_id) === packageFilter;
+                packageFilter === "ALL" || card.order_node?.package_node?.name === packageFilter;
 
             return matchesSearch && matchesAssignee && matchesEvent && matchesPackage;
         });
@@ -478,7 +478,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors, st
                     onDragEnd={handleDragEnd}
                 >
                     <div className="flex h-full gap-4 px-4 pb-6 w-full">
-                        {stages.map((stage: PipelineStageConfig) => (
+                        {stages.map((stage: PipelineStageConfig, index: number) => (
                             <StageColumn
                                 key={stage.code}
                                 stage={stage.code as PipelineStage}
@@ -489,6 +489,7 @@ export function KanbanBoard({ initialCards, users, packages, events, editors, st
                                 selectionMode={selectionMode}
                                 selectedIds={selectedIds}
                                 onToggleSelect={toggleSelection}
+                                columnIndex={index}
                             />
                         ))}
                     </div>
