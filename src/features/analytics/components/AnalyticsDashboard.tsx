@@ -18,6 +18,8 @@ import {
 import { EventComparisonChart, EventAnalyticsData } from "./EventComparisonChart";
 import { BottleneckFunnelChart } from "./BottleneckFunnelChart";
 import { DisciplineAnalyticsChart, DisciplineStats, PackageStats } from "./DisciplineAnalyticsChart";
+import { KPIGoalsProgress, generateDefaultGoals } from "./KPIGoalsProgress";
+import { AnalyticsQuickActions } from "./AnalyticsQuickActions";
 import { ExpenseDetailSection } from "@/features/finance/components/ExpenseDetailSection";
 import { CostBreakdownChart } from "@/features/finance/components/FinanceCharts";
 import { MotionCard } from "@/components/ui/motion-card";
@@ -218,9 +220,31 @@ export function AnalyticsDashboard({
         ? Object.entries(selectedEvent.package_counts).map(([name, value]) => ({ name, value }))
         : [];
 
+    // KPI Goals calculation
+    const totalOrdersCount = eventAnalytics.reduce((sum, e) => sum + (e.total_orders || 0), 0);
+    const kpiGoals = generateDefaultGoals({
+        monthlyRevenue,
+        totalOrders: totalOrdersCount,
+        totalCustomers: customerLTV.length,
+        profitMargin,
+        revenueGrowth,
+    });
+
     return (
         <div className="space-y-6 max-w-[1600px] mx-auto">
-            {/* 1. Global KPI Section (Dense) */}
+            {/* 0. Quick Actions & Alerts */}
+            <AnalyticsQuickActions
+                alerts={[]}
+                pipelineBottleneck={pipelineBottleneck}
+                onRefresh={() => window.location.reload()}
+            />
+
+            {/* 1. KPI Goals Progress */}
+            <MotionCard delay={0.1} className="p-0 border-none bg-transparent" hoverEffect={false}>
+                <KPIGoalsProgress goals={kpiGoals} />
+            </MotionCard>
+
+            {/* 2. Global KPI Section (Dense) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <KPICard
                     index={0}

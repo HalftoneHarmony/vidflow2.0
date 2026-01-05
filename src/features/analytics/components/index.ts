@@ -11,4 +11,7 @@ export { EventComparisonChart } from "./EventComparisonChart";
 export { AnalyticsDashboard } from "./AnalyticsDashboard";
 export { BottleneckFunnelChart } from "./BottleneckFunnelChart";
 export { DisciplineAnalyticsChart } from "./DisciplineAnalyticsChart";
+export { KPIGoalsProgress, generateDefaultGoals } from "./KPIGoalsProgress";
+export { AnalyticsQuickActions } from "./AnalyticsQuickActions";
+
 
