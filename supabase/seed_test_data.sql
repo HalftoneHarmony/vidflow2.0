@@ -132,7 +132,7 @@ BEGIN
     new_uuid := gen_random_uuid();
     user_email := 'testuser' || i || '@vidflow.test';
     
-    -- Insert into auth.users
+    -- Insert into auth.users (Handle conflict if exists)
     INSERT INTO auth.users (
       id,
       instance_id,
@@ -157,9 +157,10 @@ BEGIN
       NOW(),
       'authenticated',
       'authenticated'
-    );
+    )
+    ON CONFLICT (id) DO NOTHING; -- If user exists (rare with uuid), skip
     
-    -- Insert into profiles
+    -- Insert into profiles (Upsert: Update if trigger already created it)
     INSERT INTO public.profiles (id, email, name, role, phone, commission_rate)
     VALUES (
       new_uuid,
@@ -168,7 +169,13 @@ BEGIN
       'USER',
       '010-' || LPAD((1000 + i)::TEXT, 4, '0') || '-' || LPAD((5000 + i * 17)::TEXT, 4, '0'),
       0
-    );
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      email = EXCLUDED.email,
+      name = EXCLUDED.name,
+      role = EXCLUDED.role,
+      phone = EXCLUDED.phone,
+      commission_rate = EXCLUDED.commission_rate;
     
     -- Random event (1-5)
     random_event_id := 1 + ((i - 1) % 5);
