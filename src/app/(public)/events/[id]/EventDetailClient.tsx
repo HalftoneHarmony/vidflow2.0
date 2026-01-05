@@ -21,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 type EventDetailClientProps = {
     packages: PackageWithShowcase[];
@@ -55,6 +56,7 @@ export function EventDetailClient({
     const router = useRouter();
     const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
     const [selectedDiscipline, setSelectedDiscipline] = useState<string>("");
+    const [athleteNumber, setAthleteNumber] = useState<string>("");
     const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
     const [isProcessing, setIsProcessing] = useState(false);
     const [userId, setUserId] = useState<string | null>(null);
@@ -96,6 +98,8 @@ export function EventDetailClient({
     const handlePackageSelect = (packageId: number) => {
         setSelectedPackageId((prev) => (prev === packageId ? null : packageId));
         setSelectedOptions(new Set()); // 패키지 변경 시 옵션 초기화
+        setSelectedDiscipline(""); // 패키지 변경 시 종목 초기화
+        setAthleteNumber(""); // 패키지 변경 시 선수번호 초기화
     };
 
     // Validation
@@ -148,6 +152,7 @@ export function EventDetailClient({
                     packageId: selectedPackage.id,
                     options: Array.from(selectedOptions),
                     discipline: selectedDiscipline,
+                    athleteNumber: athleteNumber,
                 },
             });
 
@@ -175,7 +180,8 @@ export function EventDetailClient({
                 eventId,
                 selectedPackage.id,
                 totalAmount,
-                selectedDiscipline || undefined
+                selectedDiscipline || undefined,
+                athleteNumber || undefined
             );
 
             if (result.success) {
@@ -249,23 +255,53 @@ export function EventDetailClient({
                     </div>
                 )}
 
-                {/* Discipline Selection */}
+                {/* Discipline Selection - 클릭 버튼 형태 */}
                 {selectedPackage && disciplines.length > 0 && (
                     <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg animate-in fade-in slide-in-from-top-4 mt-6">
                         <h3 className="text-lg font-bold text-white mb-4">참가 종목 (Discipline)</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {disciplines.map((d) => (
+                                <button
+                                    key={d}
+                                    type="button"
+                                    onClick={() => setSelectedDiscipline(selectedDiscipline === d ? "" : d)}
+                                    className={`
+                                        p-4 border rounded-lg text-center font-medium transition-all
+                                        ${selectedDiscipline === d
+                                            ? "bg-red-500/20 border-red-500 text-red-400"
+                                            : "bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-900"
+                                        }
+                                    `}
+                                >
+                                    <span className="block text-sm">{d}</span>
+                                    {selectedDiscipline === d && (
+                                        <svg className="w-4 h-4 mx-auto mt-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-sm text-zinc-500 mt-3">
+                            * 신청하시는 종목을 클릭하여 선택해주세요.
+                        </p>
+                    </div>
+                )}
+
+                {/* Athlete Number Input - 선수 번호 입력 */}
+                {selectedPackage && (
+                    <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg animate-in fade-in slide-in-from-top-4 mt-6">
+                        <h3 className="text-lg font-bold text-white mb-4">선수 번호 (Athlete Number)</h3>
                         <div className="space-y-3">
-                            <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
-                                <SelectTrigger className="w-full bg-zinc-950 border-zinc-800 text-white">
-                                    <SelectValue placeholder="종목을 선택해주세요" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
-                                    {disciplines.map((d) => (
-                                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Input
+                                type="text"
+                                placeholder="예: 42, A-15, 김철수"
+                                value={athleteNumber}
+                                onChange={(e) => setAthleteNumber(e.target.value)}
+                                className="w-full bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-red-500 focus:ring-red-500/20"
+                            />
                             <p className="text-sm text-zinc-500">
-                                * 신청하시는 종목을 정확히 선택해주세요.
+                                * 대회 엔트리 번호, 등번호, 또는 이름을 입력해주세요.
                             </p>
                         </div>
                     </div>
@@ -296,6 +332,14 @@ export function EventDetailClient({
                                     <div className="mb-4">
                                         <div className="text-sm text-zinc-500 mb-1">선택한 종목</div>
                                         <div className="text-lg font-bold text-white">{selectedDiscipline}</div>
+                                    </div>
+                                )}
+
+                                {/* 선수 번호 정보 */}
+                                {athleteNumber && (
+                                    <div className="mb-4">
+                                        <div className="text-sm text-zinc-500 mb-1">선수 번호</div>
+                                        <div className="text-lg font-bold text-red-400">#{athleteNumber}</div>
                                     </div>
                                 )}
 

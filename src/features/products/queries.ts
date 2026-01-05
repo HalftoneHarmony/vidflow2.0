@@ -57,6 +57,40 @@ export async function getAllPackages(): Promise<Product[]> {
 }
 
 /**
+ * 활성화된 패키지만 조회 (Showcase용)
+ * is_sold_out = false인 패키지만 반환 (판매 중인 패키지)
+ */
+export async function getActivePackages(): Promise<Product[]> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from("packages")
+        .select(`
+            *,
+            events (
+                title,
+                event_date
+            ),
+            showcase_items (
+                id,
+                type,
+                media_url,
+                is_best_cut
+            )
+        `)
+        .eq("is_sold_out", false)
+        .order("id", { ascending: false });
+
+    if (error) {
+        console.error("[Products] Failed to fetch active packages:", error);
+        throw new Error(error.message);
+    }
+
+    // @ts-ignore: Supabase types complexity handling
+    return data || [];
+}
+
+/**
  * 특정 패키지 조회
  */
 export async function getPackageById(id: number): Promise<Product | null> {

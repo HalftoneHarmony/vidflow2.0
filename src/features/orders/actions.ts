@@ -21,6 +21,7 @@ const CreateOrderSchema = z.object({
     paymentId: z.string().min(1, "결제 ID는 필수입니다."),
     amount: z.number().int().positive("결제 금액은 양수여야 합니다."),
     discipline: z.string().optional(),
+    athleteNumber: z.string().optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof CreateOrderSchema>;
@@ -60,7 +61,7 @@ export async function createOrder(
         };
     }
 
-    const { userId, eventId, packageId, paymentId, amount, discipline } = validation.data;
+    const { userId, eventId, packageId, paymentId, amount, discipline, athleteNumber } = validation.data;
 
     try {
         const supabase = await createClient();
@@ -98,6 +99,7 @@ export async function createOrder(
                 amount: amount,
                 status: "PAID",
                 discipline: discipline || null,
+                athlete_number: athleteNumber || null,
             })
             .select("id")
             .single();
@@ -188,7 +190,8 @@ export async function verifyAndCreateOrder(
     eventId: number,
     packageId: number,
     expectedAmount: number,
-    discipline?: string
+    discipline?: string,
+    athleteNumber?: string
 ): Promise<{ success: boolean; message: string; orderId?: number }> {
     try {
         console.log(`[Dealer] Verifying payment: ${paymentId}`);
@@ -236,7 +239,8 @@ export async function verifyAndCreateOrder(
             packageId,
             paymentId,
             amount: paymentData.amount.paid,
-            discipline
+            discipline,
+            athleteNumber
         });
 
         if (!result.success) {

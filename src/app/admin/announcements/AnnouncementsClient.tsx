@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { Megaphone, Plus, Pin, Clock, AlertTriangle, Info, PartyPopper, Wrench, X, Loader2, Calendar } from "lucide-react";
-import { getActiveAnnouncements, createAnnouncement, type Announcement } from "@/features/admin/actions";
+import { Megaphone, Plus, Pin, Clock, AlertTriangle, Info, PartyPopper, Wrench, X, Loader2, Calendar, Trash2 } from "lucide-react";
+import { getActiveAnnouncements, createAnnouncement, deleteAnnouncement, type Announcement } from "@/features/admin/actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -65,6 +65,20 @@ export function AnnouncementsClient() {
         });
     };
 
+    const handleDelete = (id: number, title: string) => {
+        if (!confirm(`"${title}" 공지사항을 삭제하시겠습니까?`)) return;
+        startTransition(async () => {
+            const result = await deleteAnnouncement(id);
+            if (result.success) {
+                toast.success("공지사항이 삭제되었습니다");
+                const data = await getActiveAnnouncements();
+                setAnnouncements(data);
+            } else {
+                toast.error("삭제 실패: " + result.error);
+            }
+        });
+    };
+
     const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" });
 
     return (
@@ -118,8 +132,18 @@ export function AnnouncementsClient() {
                                             <span className={`text-xs px-2 py-0.5 uppercase ${config.bgColor}`}>{config.label}</span>
                                         </div>
                                         <p className="text-sm text-zinc-400 mb-2 line-clamp-2">{ann.content}</p>
-                                        <div className="flex items-center gap-4 text-xs text-zinc-500">
-                                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDate(ann.created_at)}</span>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4 text-xs text-zinc-500">
+                                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDate(ann.created_at)}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDelete(ann.id, ann.title)}
+                                                disabled={isPending}
+                                                className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 transition-all disabled:opacity-50"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                삭제
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

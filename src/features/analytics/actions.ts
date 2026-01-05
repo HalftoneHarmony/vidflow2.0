@@ -306,3 +306,134 @@ export async function searchOrders(query: string) {
 
     return data || [];
 }
+
+// =============================================
+// 종목별(Discipline) 분석
+// =============================================
+
+export type DisciplineStats = {
+    discipline: string;
+    total_orders: number;
+    total_revenue: number;
+    package_breakdown: Record<string, number>;
+    event_breakdown: Record<string, number>;
+};
+
+// 종목별 통계 조회
+export async function getDisciplineAnalytics(): Promise<DisciplineStats[]> {
+    const supabase = await createClient();
+
+    // 주문 데이터와 패키지, 이벤트 정보 조회
+    const { data: orders, error } = await supabase
+        .from("orders")
+        .select(`
+            id,
+            discipline,
+            amount,
+            event_id,
+            package_id,
+            packages (name),
+            events (title)
+        `);
+
+    if (error) {
+        console.error("Error fetching discipline analytics:", error);
+        return [];
+    }
+
+    // 종목별로 집계
+    const disciplineMap = new Map<string, {
+        total_orders: number;
+        total_revenue: number;
+        package_breakdown: Record<string, number>;
+        event_breakdown: Record<string, number>;
+    }>();
+
+    (orders || []).forEach((order: any) => {
+        const discipline = order.discipline || "미지정";
+        const packageName = order.packages?.name || "Unknown Package";
+        const eventTitle = order.events?.title || "Unknown Event";
+        const amount = Number(order.amount) || 0;
+
+        if (!disciplineMap.has(discipline)) {
+            disciplineMap.set(discipline, {
+                total_orders: 0,
+                total_revenue: 0,
+                package_breakdown: {},
+                event_breakdown: {},
+            });
+        }
+
+        const stats = disciplineMap.get(discipline)!;
+        stats.total_orders += 1;
+        stats.total_revenue += amount;
+        stats.package_breakdown[packageName] = (stats.package_breakdown[packageName] || 0) + 1;
+        stats.event_breakdown[eventTitle] = (stats.event_breakdown[eventTitle] || 0) + 1;
+    });
+
+    // Map을 배열로 변환 & 정렬
+    return Array.from(disciplineMap.entries())
+        .map(([discipline, stats]) => ({
+            discipline,
+            ...stats,
+        }))
+        .sort((a, b) => b.total_orders - a.total_orders);
+}
+
+// 패키지별 통합 통계
+export type PackageStats = {
+    package_name: string;
+    total_orders: number;
+    total_revenue: number;
+    discipline_breakdown: Record<string, number>;
+};
+
+export async function getPackageAnalytics(): Promise<PackageStats[]> {
+    const supabase = await createClient();
+
+    const { data: orders, error } = await supabase
+        .from("orders")
+        .select(`
+            id,
+            discipline,
+            amount,
+            packages (name)
+        `);
+
+    if (error) {
+        console.error("Error fetching package analytics:", error);
+        return [];
+    }
+
+    const packageMap = new Map<string, {
+        total_orders: number;
+        total_revenue: number;
+        discipline_breakdown: Record<string, number>;
+    }>();
+
+    (orders || []).forEach((order: any) => {
+        const packageName = order.packages?.name || "Unknown Package";
+        const discipline = order.discipline || "미지정";
+        const amount = Number(order.amount) || 0;
+
+        if (!packageMap.has(packageName)) {
+            packageMap.set(packageName, {
+                total_orders: 0,
+                total_revenue: 0,
+                discipline_breakdown: {},
+            });
+        }
+
+        const stats = packageMap.get(packageName)!;
+        stats.total_orders += 1;
+        stats.total_revenue += amount;
+        stats.discipline_breakdown[discipline] = (stats.discipline_breakdown[discipline] || 0) + 1;
+    });
+
+    return Array.from(packageMap.entries())
+        .map(([package_name, stats]) => ({
+            package_name,
+            ...stats,
+        }))
+        .sort((a, b) => b.total_orders - a.total_orders);
+}

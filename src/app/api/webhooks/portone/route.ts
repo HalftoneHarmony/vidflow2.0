@@ -54,7 +54,7 @@ export async function POST(request: Request) {
             console.error("[Webhook] Failed to parse customData:", e);
         }
 
-        const { userId, eventId, packageId } = customData as any;
+        const { userId, eventId, packageId, discipline, athleteNumber } = customData as any;
 
         if (!userId || !eventId || !packageId) {
             console.error("[Webhook] Missing required metadata in customData:", customData);
@@ -67,7 +67,9 @@ export async function POST(request: Request) {
             userId,
             Number(eventId),
             Number(packageId),
-            paymentData.amount.paid
+            paymentData.amount.paid,
+            discipline || undefined,
+            athleteNumber || undefined
         );
 
         if (!result.success) {

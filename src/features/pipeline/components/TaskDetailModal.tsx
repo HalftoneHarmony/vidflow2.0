@@ -120,7 +120,7 @@ export function TaskDetailModal({ card, isOpen, onClose, availableWorkers }: Tas
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-500 uppercase font-bold">Last Updated</label>
                                         <div className="font-mono text-zinc-200">
-                                            {new Date(card.updated_at).toLocaleDateString()}
+                                            {card.updated_at ? new Date(card.updated_at).toLocaleDateString() : '-'}
                                         </div>
                                     </div>
                                 </div>

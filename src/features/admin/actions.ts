@@ -70,6 +70,27 @@ export async function createAnnouncement(data: {
     return { success: true };
 }
 
+// 공지사항 삭제 (관리자용)
+export async function deleteAnnouncement(id: number) {
+    const supabase = await createClient();
+
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return { success: false, error: "Unauthorized" };
+
+    const { error } = await supabase
+        .from("announcements")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        console.error("Error deleting announcement:", error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath("/admin");
+    return { success: true };
+}
+
 // =============================================
 // 활동 로그 관련
 // =============================================
