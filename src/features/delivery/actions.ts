@@ -8,6 +8,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendEmail, buildVideoReadyEmail } from "@/lib/email/resend";
 
 // ===== TYPES =====
 
@@ -138,6 +139,7 @@ async function validateExternalLink(linkUrl: string): Promise<LinkValidationResu
  * - 200 OK: link_status = 'VALID'
  * - 403/404: link_status = 'INVALID', 저장 거부
  * - link_last_checked_at 업데이트
+ * - 🎉 성공시 고객에게 이메일 알림 발송
  */
 export async function submitExternalLink(
     deliverableId: number,
@@ -179,6 +181,69 @@ export async function submitExternalLink(
         }
 
         console.log(`[Sentinel] ✅ Link saved for deliverable ${deliverableId}: ${validation.status}`);
+
+        // Step 4: 고객에게 이메일 알림 발송 🎉
+        try {
+            // deliverable -> card -> order -> user 정보 가져오기
+            const { data: deliverableData } = await supabase
+                .from("deliverables")
+                .select(`
+                    type,
+                    card:pipeline_cards!inner (
+                        order:orders!inner (
+                            id,
+                            package:packages ( name ),
+                            user:profiles!inner ( name, email )
+                        )
+                    )
+                `)
+                .eq("id", deliverableId)
+                .single();
+
+            // Supabase join 결과 처리 (배열일 수 있음)
+            const card = Array.isArray(deliverableData?.card)
+                ? deliverableData.card[0]
+                : deliverableData?.card;
+            const order = Array.isArray(card?.order)
+                ? card.order[0]
+                : card?.order;
+            const user = Array.isArray(order?.user)
+                ? order.user[0]
+                : order?.user;
+            const pkg = Array.isArray(order?.package)
+                ? order.package[0]
+                : order?.package;
+
+            if (user?.email) {
+                const customerEmail = user.email;
+                const customerName = user.name || "고객";
+                const packageName = pkg?.name || "영상 패키지";
+                const deliverableType = deliverableData?.type || "MAIN_VIDEO";
+                const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
+                const downloadPageUrl = `${siteUrl}/my-page`;
+
+                const emailContent = buildVideoReadyEmail({
+                    customerName,
+                    packageName,
+                    deliverableType,
+                    downloadPageUrl,
+                });
+
+                const emailResult = await sendEmail({
+                    to: customerEmail,
+                    ...emailContent,
+                });
+
+                if (emailResult.success) {
+                    console.log(`[Sentinel] 📧 Email sent to ${customerEmail}`);
+                } else {
+                    console.warn(`[Sentinel] ⚠️ Email failed: ${emailResult.error}`);
+                }
+            }
+        } catch (emailError) {
+            // 이메일 발송 실패해도 링크 저장은 성공으로 처리
+            console.error(`[Sentinel] Email notification error:`, emailError);
+        }
 
         revalidatePath("/admin/pipeline"); // UI 갱신 (트리거)
         revalidatePath("/my-page"); // 고객 페이지도 갱신
