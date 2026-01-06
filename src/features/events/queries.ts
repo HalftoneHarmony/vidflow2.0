@@ -13,6 +13,7 @@ export type AdminEvent = {
     is_active: boolean;
     thumbnail_url: string;
     disciplines: string[];
+    composition_options?: string[];
     created_at: string;
     package_count: number;
 };
@@ -37,5 +38,6 @@ export async function getAdminEvents(): Promise<AdminEvent[]> {
         ...event,
         package_count: event.packages?.[0]?.count || 0,
         disciplines: event.disciplines || [],
+        composition_options: event.composition_options || [],
     }));
 }

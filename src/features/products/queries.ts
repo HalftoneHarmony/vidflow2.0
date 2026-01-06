@@ -125,7 +125,7 @@ export async function getAllEvents() {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from("events")
-        .select("id, title, event_date")
+        .select("id, title, event_date, composition_options")
         .order("event_date", { ascending: false });
 
     if (error) {

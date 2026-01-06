@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 type ProductArsenalProps = {
     packages: Product[];
-    events: { id: number; title: string; event_date: string }[];
+    events: { id: number; title: string; event_date: string; composition_options?: string[] }[];
 };
 
 export function ProductArsenal({ packages, events }: ProductArsenalProps) {

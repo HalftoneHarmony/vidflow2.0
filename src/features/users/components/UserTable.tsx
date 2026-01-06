@@ -3,10 +3,9 @@
 import * as React from "react";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
-import { InlineEdit } from "@/components/ui/inline-edit";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatDate, formatCurrency } from "@/shared/utils/formatters";
-import { updateUserRole, updateCommissionRate } from "../actions";
+import { updateUserRole } from "../actions";
 import { toast } from "sonner";
 import {
     DropdownMenu,
@@ -33,6 +32,7 @@ type Profile = {
     role: "ADMIN" | "EDITOR" | "USER";
     phone: string | null;
     commission_rate: number;
+    instagram_id: string | null;
     created_at: string;
 };
 
@@ -62,21 +62,7 @@ export function UserTable({ users }: UserTableProps) {
         }
     };
 
-    const handleCommissionChange = async (userId: string, value: string) => {
-        const rate = parseInt(value, 10);
-        if (isNaN(rate)) {
-            toast.error("올바른 숫자를 입력해주세요.");
-            return;
-        }
 
-        try {
-            await updateCommissionRate(userId, rate);
-            toast.success("커미션율이 변경되었습니다.");
-        } catch (error) {
-            toast.error("커미션율 변경에 실패했습니다.");
-            console.error(error);
-        }
-    };
 
     const columns: Column<Profile>[] = [
         {
@@ -140,17 +126,12 @@ export function UserTable({ users }: UserTableProps) {
             },
         },
         {
-            header: "Commission",
-            cell: (user) => {
-                return (
-                    <InlineEdit
-                        value={String(user.commission_rate || 0)}
-                        onSave={(val) => handleCommissionChange(user.id, val)}
-                        className="font-mono text-emerald-500"
-                        placeholder="0"
-                    />
-                )
-            },
+            header: "Instagram",
+            cell: (user) => (
+                <span className="text-zinc-400 font-mono text-sm">
+                    {user.instagram_id || "-"}
+                </span>
+            ),
         },
         {
             header: "Phone",

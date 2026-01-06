@@ -55,6 +55,7 @@ export async function signup(prevState: ActionState, formData: FormData): Promis
     const password = formData.get("password") as string;
     const passwordConfirm = formData.get("passwordConfirm") as string;
     const phone = formData.get("phone") as string | null;
+    const instagramId = formData.get("instagramId") as string | null;
 
     // Validation
     if (!name || !email || !password) {
@@ -102,6 +103,7 @@ export async function signup(prevState: ActionState, formData: FormData): Promis
             email: email,
             name: name,
             phone: phone || null,
+            instagram_id: instagramId || null,
             role: "USER",
         });
 

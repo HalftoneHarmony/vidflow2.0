@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 type GroupedPackageCardProps = {
     name: string;
     packages: Product[];
-    eventsList: { id: number; title: string; event_date: string }[];
+    eventsList: { id: number; title: string; event_date: string; composition_options?: string[] }[];
 };
 
 export function GroupedPackageCard({ name, packages, eventsList }: GroupedPackageCardProps) {

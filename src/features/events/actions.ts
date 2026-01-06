@@ -61,7 +61,8 @@ export async function createEvent(formData: FormData) {
             event_date: eventDate,
             thumbnail_url: thumbnailUrl,
             is_active: isActive,
-            disciplines: JSON.parse((formData.get("disciplines") as string) || "[]")
+            disciplines: JSON.parse((formData.get("disciplines") as string) || "[]"),
+            composition_options: JSON.parse((formData.get("composition_options") as string) || "[]")
         });
 
     if (error) {
@@ -97,6 +98,7 @@ export async function updateEvent(eventId: number, formData: FormData) {
         event_date: eventDate,
         thumbnail_url: thumbnailUrl,
         disciplines: JSON.parse((formData.get("disciplines") as string) || "[]"),
+        composition_options: JSON.parse((formData.get("composition_options") as string) || "[]"),
     };
 
     if (isActiveStr !== null) {

@@ -18,7 +18,8 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Cell
+    Cell,
+    LabelList
 } from "recharts";
 import { Users, DollarSign, TrendingUp, Percent, Filter, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -145,11 +146,34 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
     }, [chartData, selectedEventIds, metric]);
 
     // Determine display data - if not expanded, show max 8 events for compact view
-    const displayData = isExpanded ? sortedData : sortedData.slice(0, 8);
+    const displayData = useMemo(() => {
+        const raw = isExpanded ? sortedData : sortedData.slice(0, 8);
+        return raw.map((item, index) => ({
+            ...item,
+            rank: index + 1
+        }));
+    }, [isExpanded, sortedData]);
+
     const hasMoreEvents = sortedData.length > 8;
 
+    // Calculate Summary
+    const totalValue = useMemo(() => {
+        if (metric === "margin") {
+            // Average for margin
+            return displayData.length > 0
+                ? Math.round(displayData.reduce((acc, curr) => acc + (curr.profit_margin || 0), 0) / displayData.length)
+                : 0;
+        }
+        return displayData.reduce((acc, curr) => {
+            const val = metric === "orders" ? curr.total_orders :
+                metric === "revenue" ? curr.gross_revenue :
+                    metric === "profit" ? curr.net_profit : 0;
+            return acc + (val || 0);
+        }, 0);
+    }, [displayData, metric]);
+
     // Dynamic height based on number of events displayed
-    const chartHeight = Math.max(300, displayData.length * 40 + 50);
+    const chartHeight = Math.max(300, displayData.length * 48 + 50);
 
     // 3. Config based on Metric
     const config = {
@@ -158,28 +182,32 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
             color: "#3b82f6",
             gradientId: "ordersGradient",
             icon: Users,
-            formatter: (v: number) => `${numberFormatter(v)}명`
+            formatter: (v: number) => `${numberFormatter(v)}명`,
+            unit: "명"
         },
         revenue: {
             label: "Gross Revenue",
             color: "#10b981",
             gradientId: "revenueGradient",
             icon: DollarSign,
-            formatter: currencyFormatter
+            formatter: currencyFormatter,
+            unit: "원"
         },
         profit: {
             label: "Net Profit",
             color: "#059669",
             gradientId: "profitGradient",
             icon: TrendingUp,
-            formatter: currencyFormatter
+            formatter: currencyFormatter,
+            unit: "원"
         },
         margin: {
             label: "Profit Margin",
             color: "#f59e0b",
             gradientId: "marginGradient",
             icon: Percent,
-            formatter: (v: number) => `${v}%`
+            formatter: (v: number) => `${v}%`,
+            unit: "%"
         },
     };
 
@@ -213,8 +241,8 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/5 to-transparent pointer-events-none group-hover:from-emerald-600/10 transition-colors duration-500" />
 
             {/* Header & Controls */}
-            <div className="flex flex-col gap-5 mb-2 relative z-10">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col gap-6 mb-4 relative z-10">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 shadow-lg shadow-black/20 ring-1 ring-white/10`}>
                             <Icon className="w-6 h-6 text-white" />
@@ -223,12 +251,32 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
                             <h3 className="text-xl font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wide">
                                 Event Comparison
                             </h3>
-                            <p className="text-xs text-zinc-400 font-medium">
-                                {selectedEventIds.size > 0
-                                    ? `${selectedEventIds.size} Events Selected`
-                                    : `Comparing Top ${Math.min(displayData.length, 8)} Events`
-                                }
-                            </p>
+                            <div className="flex items-center gap-2">
+                                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <p className="text-xs text-zinc-400 font-medium whitespace-nowrap">
+                                    {selectedEventIds.size > 0
+                                        ? `${selectedEventIds.size} Events Selected`
+                                        : `Comparing Top ${Math.min(displayData.length, 8)} Events`
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Summary Card Inline */}
+                    <div className="flex items-center gap-4 px-4 py-3 bg-zinc-950/40 rounded-xl border border-white/5 backdrop-blur-md">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-zinc-500 uppercase font-black tracking-tighter">Total {currentConfig.label}</span>
+                            <span className="text-lg font-mono font-bold text-emerald-400">
+                                {metric === "margin" ? `AVG ${totalValue}%` : currentConfig.formatter(totalValue)}
+                            </span>
+                        </div>
+                        <div className="h-8 w-px bg-zinc-800" />
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-zinc-500 uppercase font-black tracking-tighter">Event Count</span>
+                            <span className="text-lg font-mono font-bold text-white">
+                                {displayData.length}
+                            </span>
                         </div>
                     </div>
 
@@ -359,8 +407,8 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
                     <BarChart
                         data={displayData}
                         layout="vertical"
-                        margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
-                        barSize={20}
+                        margin={{ top: 5, right: 120, left: 10, bottom: 5 }}
+                        barSize={24}
                         onClick={(data: any) => {
                             if (data && data.activePayload && data.activePayload.length > 0) {
                                 onEventClick?.(data.activePayload[0].payload as EventAnalyticsData);
@@ -391,11 +439,42 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
                         <YAxis
                             dataKey="event_title"
                             type="category"
-                            width={160}
-                            tick={{ fill: "#a1a1aa", fontSize: 11, fontWeight: 500 }}
+                            width={180}
+                            tick={(props: any) => {
+                                const { x, y, payload } = props;
+                                const index = displayData.findIndex(d => d.event_title === payload.value);
+                                const rank = index + 1;
+                                const isTop3 = rank <= 3;
+
+                                return (
+                                    <g transform={`translate(${x},${y})`}>
+                                        <text
+                                            x={-10}
+                                            y={0}
+                                            dy={4}
+                                            fill={isTop3 ? "#fbbf24" : "#52525b"}
+                                            fontSize={10}
+                                            fontWeight="bold"
+                                            textAnchor="end"
+                                        >
+                                            {rank}
+                                        </text>
+                                        <text
+                                            x={-20}
+                                            y={0}
+                                            dy={4}
+                                            fill={isTop3 ? "#ffffff" : "#a1a1aa"}
+                                            fontSize={11}
+                                            fontWeight={isTop3 ? "700" : "500"}
+                                            textAnchor="end"
+                                        >
+                                            {payload.value.length > 20 ? `${payload.value.substring(0, 20)}...` : payload.value}
+                                        </text>
+                                    </g>
+                                );
+                            }}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(val) => val.length > 20 ? `${val.substring(0, 20)}...` : val}
                         />
                         <Tooltip
                             content={<CustomTooltip mode={metric} />}
@@ -415,9 +494,49 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
                                 <Cell
                                     key={`cell-${index}`}
                                     fill={`url(#${currentConfig.gradientId})`}
-                                    opacity={1} // Adjusted to full opacity since we use gradients
+                                    opacity={1}
                                 />
                             ))}
+                            <LabelList
+                                dataKey={
+                                    metric === "orders" ? "total_orders" :
+                                        metric === "revenue" ? "gross_revenue" :
+                                            metric === "profit" ? "net_profit" : "profit_margin"
+                                }
+                                position="right"
+                                content={(props: any) => {
+                                    const { x, y, width, height, value, index } = props;
+                                    const isTop3 = index < 3;
+                                    return (
+                                        <g>
+                                            <text
+                                                x={x + width + 10}
+                                                y={y + height / 2.5}
+                                                fill={isTop3 ? "#ffffff" : "#a1a1aa"}
+                                                fontSize={12}
+                                                fontWeight={isTop3 ? "800" : "600"}
+                                                fontFamily="monospace"
+                                                textAnchor="start"
+                                            >
+                                                {currentConfig.formatter(value)}
+                                            </text>
+                                            {isTop3 && (
+                                                <text
+                                                    x={x + width + 10}
+                                                    y={y + height / 1.2}
+                                                    fill="#fbbf24"
+                                                    fontSize={8}
+                                                    fontWeight="bold"
+                                                    textAnchor="start"
+                                                    style={{ textTransform: 'uppercase' }}
+                                                >
+                                                    Top Performer
+                                                </text>
+                                            )}
+                                        </g>
+                                    );
+                                }}
+                            />
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
@@ -445,3 +564,8 @@ export function EventComparisonChart({ data, onEventClick }: Props) {
         </div>
     );
 }
+
+// ==========================================
+// Sub-components
+// ==========================================
+

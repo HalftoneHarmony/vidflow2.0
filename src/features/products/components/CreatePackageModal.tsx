@@ -6,7 +6,7 @@ import { COMPOSITION_OPTIONS } from "../config";
 import { X } from "lucide-react";
 
 type CreatePackageModalProps = {
-    eventsList: { id: number; title: string; event_date: string }[];
+    eventsList: { id: number; title: string; event_date: string; composition_options?: string[] }[];
     onClose: () => void;
 };
 
@@ -102,21 +102,34 @@ export function CreatePackageModal({ eventsList, onClose }: CreatePackageModalPr
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-zinc-500 uppercase">Composition</label>
                         <div className="flex flex-wrap gap-2">
-                            {COMPOSITION_OPTIONS.map(opt => (
-                                <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() => toggleComposition(opt)}
-                                    className={`
+                            {(() => {
+                                // Determine available options based on selected events
+                                // If events are selected, use the options from the first selected event (assuming consistency or priority)
+                                // If no event selected, fall back to default global options
+                                const selectedEvent = formData.event_ids.length > 0
+                                    ? eventsList.find(e => e.id === formData.event_ids[0])
+                                    : null;
+
+                                const options = selectedEvent?.composition_options?.length
+                                    ? selectedEvent.composition_options
+                                    : COMPOSITION_OPTIONS;
+
+                                return options.map(opt => (
+                                    <button
+                                        key={opt}
+                                        type="button"
+                                        onClick={() => toggleComposition(opt)}
+                                        className={`
                                         px-3 py-2 rounded text-sm font-medium border transition-all
                                         ${formData.composition.includes(opt)
-                                            ? "bg-red-500/20 border-red-500 text-red-400"
-                                            : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-600"}
+                                                ? "bg-red-500/20 border-red-500 text-red-400"
+                                                : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:border-zinc-600"}
                                     `}
-                                >
-                                    {opt}
-                                </button>
-                            ))}
+                                    >
+                                        {opt}
+                                    </button>
+                                ));
+                            })()}
                         </div>
                     </div>
 

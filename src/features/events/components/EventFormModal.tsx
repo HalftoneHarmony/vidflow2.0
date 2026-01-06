@@ -25,6 +25,9 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
     const [disciplinesStr, setDisciplinesStr] = useState(
         event?.disciplines ? event.disciplines.join(", ") : ""
     );
+    const [compositionOptionsStr, setCompositionOptionsStr] = useState(
+        event?.composition_options ? event.composition_options.join(", ") : "VIDEO, PHOTO, HIGHLIGHT, RAW, REELS, DRONE, INTERVIEW"
+    );
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -165,6 +168,57 @@ export function EventFormModal({ isOpen, onClose, event }: EventFormModalProps) 
                             type="hidden"
                             name="disciplines"
                             value={JSON.stringify(disciplinesStr.split(",").map(s => s.trim()).filter(Boolean))}
+                        />
+                    </motion.div>
+
+                    {/* Composition Options */}
+                    <motion.div className="space-y-2" initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.42 }}>
+                        <Label htmlFor="composition_options" className="text-zinc-400">Composition Options</Label>
+                        <div className="flex flex-wrap gap-2 p-3 min-h-[60px] bg-zinc-950 border border-zinc-800 rounded-md">
+                            {compositionOptionsStr.split(",").map(s => s.trim()).filter(Boolean).map((opt, idx) => (
+                                <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/20 border border-blue-500/50 text-blue-400 text-sm rounded"
+                                >
+                                    {opt}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const arr = compositionOptionsStr.split(",").map(s => s.trim()).filter(Boolean);
+                                            arr.splice(idx, 1);
+                                            setCompositionOptionsStr(arr.join(", "));
+                                        }}
+                                        className="hover:text-blue-300 ml-1"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                            <input
+                                type="text"
+                                placeholder="옵션 입력 후 Enter"
+                                className="flex-1 min-w-[120px] bg-transparent text-white text-sm outline-none placeholder:text-zinc-600"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        const val = e.currentTarget.value.trim();
+                                        if (val) {
+                                            const arr = compositionOptionsStr.split(",").map(s => s.trim()).filter(Boolean);
+                                            if (!arr.includes(val)) {
+                                                arr.push(val);
+                                                setCompositionOptionsStr(arr.join(", "));
+                                            }
+                                            e.currentTarget.value = "";
+                                        }
+                                    }
+                                }}
+                            />
+                        </div>
+                        <p className="text-[10px] text-zinc-500">패키지 구성 옵션을 입력하고 Enter를 눌러 추가하세요 (예: 4K, ALTO)</p>
+                        <input
+                            type="hidden"
+                            name="composition_options"
+                            value={JSON.stringify(compositionOptionsStr.split(",").map(s => s.trim()).filter(Boolean))}
                         />
                     </motion.div>
 

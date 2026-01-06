@@ -201,7 +201,7 @@ export function ContactsClient() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                     <input
                         type="text"
-                        placeholder="이름, 이메일, 내용 검색..."
+                        placeholder="이름, 이메일, 제목, 내용 검색..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-600 transition-colors"
@@ -245,6 +245,7 @@ export function ContactsClient() {
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">이름</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">이메일</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">제목</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">카테고리</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">상태</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">접수일</th>
@@ -272,6 +273,11 @@ export function ContactsClient() {
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className="text-zinc-400 font-mono text-sm">{contact.email}</span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="text-zinc-300 text-sm font-medium line-clamp-1">
+                                                {contact.subject || "제목 없음"}
+                                            </span>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex items-center px-2 py-1 text-xs font-bold uppercase ${category.color} text-white`}>

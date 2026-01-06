@@ -104,6 +104,19 @@ export function SignUpForm() {
                         />
                     </div>
 
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="instagramId">
+                            Instagram ID <span className="text-zinc-600 font-normal lowercase">(optional)</span>
+                        </label>
+                        <Input
+                            id="instagramId"
+                            name="instagramId"
+                            type="text"
+                            placeholder="@vidflow_official"
+                            className="h-12 bg-zinc-900/50 border-zinc-800 focus:border-white text-white rounded-none transition-colors"
+                        />
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="password">

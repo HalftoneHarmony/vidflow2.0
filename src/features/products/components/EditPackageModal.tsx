@@ -9,7 +9,7 @@ import { X } from "lucide-react";
 
 type EditPackageModalProps = {
     pkg: Product;
-    eventsList: { id: number; title: string; event_date: string }[];
+    eventsList: { id: number; title: string; event_date: string; composition_options?: string[] }[];
     onClose: () => void;
 };
 
@@ -113,7 +113,7 @@ export function EditPackageModal({ pkg, eventsList, onClose }: EditPackageModalP
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-zinc-500 uppercase">Composition</label>
                         <div className="flex flex-wrap gap-2">
-                            {COMPOSITION_OPTIONS.map(opt => (
+                            {(currentEvent?.composition_options?.length ? currentEvent.composition_options : COMPOSITION_OPTIONS).map(opt => (
                                 <button
                                     key={opt}
                                     type="button"

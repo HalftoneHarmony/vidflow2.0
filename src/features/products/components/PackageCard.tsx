@@ -8,7 +8,7 @@ import { Copy, Trash2, Play, Pause, Edit2, MoreVertical } from "lucide-react";
 
 type PackageCardProps = {
     pkg: Product;
-    eventsList: { id: number; title: string; event_date: string }[];
+    eventsList: { id: number; title: string; event_date: string; composition_options?: string[] }[];
 };
 
 export function PackageCard({ pkg, eventsList }: PackageCardProps) {

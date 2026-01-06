@@ -71,3 +71,27 @@ export async function deletePortfolioItem(id: number) {
         return { success: false, error: error.message };
     }
 }
+
+/**
+ * Update a Portfolio Item
+ */
+export async function updatePortfolioItem(id: number, data: any) {
+    const supabase = await createClient();
+
+    try {
+        const { error } = await supabase
+            .from("portfolio_items")
+            .update(data)
+            .eq("id", id);
+
+        if (error) throw error;
+
+        revalidatePath("/portfolio");
+        revalidatePath("/showcase");
+        revalidatePath("/admin/portfolio");
+        return { success: true };
+    } catch (error: any) {
+        console.error("Update Error:", error);
+        return { success: false, error: error.message };
+    }
+}
