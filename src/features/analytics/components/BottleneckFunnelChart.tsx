@@ -46,7 +46,19 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; gradient: st
         gradient: "from-amber-500/20 to-amber-600/10",
         icon: Clock
     },
+    WAITING: {
+        label: "대기중",
+        color: "#f59e0b",
+        gradient: "from-amber-500/20 to-amber-600/10",
+        icon: Clock
+    },
     shooting: {
+        label: "촬영",
+        color: "#3b82f6",
+        gradient: "from-blue-500/20 to-blue-600/10",
+        icon: Zap
+    },
+    SHOOTING: {
         label: "촬영",
         color: "#3b82f6",
         gradient: "from-blue-500/20 to-blue-600/10",
@@ -58,13 +70,31 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; gradient: st
         gradient: "from-violet-500/20 to-violet-600/10",
         icon: Zap
     },
+    EDITING: {
+        label: "편집",
+        color: "#8b5cf6",
+        gradient: "from-violet-500/20 to-violet-600/10",
+        icon: Zap
+    },
     ready: {
         label: "완료",
         color: "#22c55e",
         gradient: "from-emerald-500/20 to-emerald-600/10",
         icon: CheckCircle
     },
+    READY: {
+        label: "완료",
+        color: "#22c55e",
+        gradient: "from-emerald-500/20 to-emerald-600/10",
+        icon: CheckCircle
+    },
     delivered: {
+        label: "전달",
+        color: "#10b981",
+        gradient: "from-green-500/20 to-green-600/10",
+        icon: CheckCircle
+    },
+    DELIVERED: {
         label: "전달",
         color: "#10b981",
         gradient: "from-green-500/20 to-green-600/10",
@@ -109,7 +139,30 @@ function InsightCard({ title, value, icon: Icon, color, description }: {
 // ==========================================
 
 export function BottleneckFunnelChart({ data }: Props) {
-    if (!data || data.length === 0) {
+    // 유효한 데이터만 필터링하고 중복된 status 처리
+    const validData = data.filter(d => d && d.status);
+
+    // Status 별로 데이터 병합 (중복 키 방지)
+    const mergedDataMap = validData.reduce((acc, curr) => {
+        const existing = acc.get(curr.status);
+        if (existing) {
+            // 이미 존재하는 status면 데이터 합산/평균
+            acc.set(curr.status, {
+                ...existing,
+                task_count: (existing.task_count || 0) + (curr.task_count || 0),
+                // 평균값은 가중 평균 등을 해야 정확하지만, 여기서는 단순화하여 처리
+                avg_days_in_status: ((existing.avg_days_in_status || 0) + (curr.avg_days_in_status || 0)) / 2,
+                bottleneck_score: Math.max(existing.bottleneck_score || 0, curr.bottleneck_score || 0)
+            });
+        } else {
+            acc.set(curr.status, curr);
+        }
+        return acc;
+    }, new Map<string, PipelineBottleneck>());
+
+    const processedData = Array.from(mergedDataMap.values());
+
+    if (processedData.length === 0) {
         return (
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 h-full flex items-center justify-center">
                 <div className="text-center text-zinc-500">
@@ -121,25 +174,25 @@ export function BottleneckFunnelChart({ data }: Props) {
     }
 
     // Calculations
-    const totalTasks = data.reduce((sum, d) => sum + (d.task_count || 0), 0);
-    const worstBottleneck = data.reduce((prev, curr) =>
+    const totalTasks = processedData.reduce((sum, d) => sum + (d.task_count || 0), 0);
+    const worstBottleneck = processedData.reduce((prev, curr) =>
         (curr.bottleneck_score || 0) > (prev.bottleneck_score || 0) ? curr : prev
-        , data[0]);
-    const avgDays = data.reduce((sum, d) => sum + (d.avg_days_in_status || 0), 0) / data.length;
+        , processedData[0]);
+    const avgDays = processedData.reduce((sum, d) => sum + (d.avg_days_in_status || 0), 0) / processedData.length;
 
     // Sort by pipeline order for funnel visualization
-    const orderedData = [...data].sort((a, b) => {
+    const orderedData = [...processedData].sort((a, b) => {
         const order = ['waiting', 'shooting', 'editing', 'ready', 'delivered'];
-        return order.indexOf(a.status) - order.indexOf(b.status);
+        return order.indexOf(a.status.toLowerCase()) - order.indexOf(b.status.toLowerCase());
     });
 
     // Calculate widths for funnel effect (first is widest)
     const maxTasks = Math.max(...orderedData.map(d => d.task_count || 0), 1);
 
     // Find bottleneck insights
-    const highBottlenecks = data.filter(d => d.bottleneck_level === 'HIGH');
-    const longestStage = data.reduce((max, curr) =>
-        (curr.avg_days_in_status || 0) > (max.avg_days_in_status || 0) ? curr : max, data[0]);
+    const highBottlenecks = processedData.filter(d => d.bottleneck_level === 'HIGH');
+    const longestStage = processedData.reduce((max, curr) =>
+        (curr.avg_days_in_status || 0) > (max.avg_days_in_status || 0) ? curr : max, processedData[0]);
 
     return (
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">

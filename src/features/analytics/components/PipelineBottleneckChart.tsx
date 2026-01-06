@@ -31,10 +31,15 @@ type Props = {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
     waiting: { label: "대기", color: "#f59e0b", icon: Clock },
+    WAITING: { label: "대기", color: "#f59e0b", icon: Clock },
     shooting: { label: "촬영", color: "#3b82f6", icon: Zap },
+    SHOOTING: { label: "촬영", color: "#3b82f6", icon: Zap },
     editing: { label: "편집", color: "#8b5cf6", icon: Zap },
+    EDITING: { label: "편집", color: "#8b5cf6", icon: Zap },
     ready: { label: "완료", color: "#22c55e", icon: CheckCircle },
+    READY: { label: "완료", color: "#22c55e", icon: CheckCircle },
     delivered: { label: "전송", color: "#10b981", icon: CheckCircle },
+    DELIVERED: { label: "전송", color: "#10b981", icon: CheckCircle },
 };
 
 const BOTTLENECK_COLORS: Record<string, string> = {
@@ -48,7 +53,28 @@ const BOTTLENECK_COLORS: Record<string, string> = {
 // ==========================================
 
 export function PipelineBottleneckChart({ data }: Props) {
-    if (!data || data.length === 0) {
+    // 유효한 데이터만 필터링하고 중복된 status 처리
+    const validData = data.filter(d => d && d.status);
+
+    // Status 별로 데이터 병합
+    const mergedDataMap = validData.reduce((acc, curr) => {
+        const existing = acc.get(curr.status);
+        if (existing) {
+            acc.set(curr.status, {
+                ...existing,
+                task_count: (existing.task_count || 0) + (curr.task_count || 0),
+                avg_days_in_status: ((existing.avg_days_in_status || 0) + (curr.avg_days_in_status || 0)) / 2,
+                bottleneck_score: Math.max(existing.bottleneck_score || 0, curr.bottleneck_score || 0)
+            });
+        } else {
+            acc.set(curr.status, curr);
+        }
+        return acc;
+    }, new Map<string, PipelineBottleneck>());
+
+    const processedData = Array.from(mergedDataMap.values());
+
+    if (processedData.length === 0) {
         return (
             <div className="bg-zinc-900/50 border border-zinc-800 p-6 h-full flex items-center justify-center">
                 <div className="text-center text-zinc-500">
@@ -60,14 +86,14 @@ export function PipelineBottleneckChart({ data }: Props) {
     }
 
     // Calculate max for progress bars
-    const maxScore = Math.max(...data.map(d => d.bottleneck_score || 0), 100);
-    const maxTasks = Math.max(...data.map(d => d.task_count || 0), 1);
-    const totalTasks = data.reduce((sum, d) => sum + (d.task_count || 0), 0);
+    const maxScore = Math.max(...processedData.map(d => d.bottleneck_score || 0), 100);
+    const maxTasks = Math.max(...processedData.map(d => d.task_count || 0), 1);
+    const totalTasks = processedData.reduce((sum, d) => sum + (d.task_count || 0), 0);
 
     // Find the biggest bottleneck
-    const worstBottleneck = data.reduce((prev, curr) =>
+    const worstBottleneck = processedData.reduce((prev, curr) =>
         (curr.bottleneck_score || 0) > (prev.bottleneck_score || 0) ? curr : prev
-        , data[0]);
+        , processedData[0]);
 
     return (
         <div className="bg-zinc-900/50 border border-zinc-800 p-6 h-full relative overflow-hidden">
@@ -119,7 +145,7 @@ export function PipelineBottleneckChart({ data }: Props) {
 
             {/* Pipeline Flow */}
             <div className="space-y-3">
-                {data.map((stage, index) => {
+                {processedData.map((stage, index) => {
                     const config = STATUS_CONFIG[stage.status] || {
                         label: stage.status,
                         color: "#71717a",

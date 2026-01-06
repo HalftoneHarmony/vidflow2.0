@@ -244,7 +244,25 @@ export async function getPipelineBottleneck() {
         return [];
     }
 
-    return data || [];
+    return (data || []).map((row: any) => {
+        // 병목 점수 계산 (임의 로직: 체류시간(일) * 10 + 대기건수 * 5)
+        const avgDays = (row.avg_hours_in_stage || 0) / 24;
+        const count = row.card_count || 0;
+        // 점수 계산 (최대 100점)
+        const score = Math.min((avgDays * 10) + (count * 5), 100);
+
+        let level = "LOW";
+        if (score >= 70) level = "HIGH";
+        else if (score >= 30) level = "MEDIUM";
+
+        return {
+            status: row.stage, // DB의 'stage'를 'status'로 매핑
+            task_count: count,
+            avg_days_in_status: avgDays,
+            bottleneck_score: score,
+            bottleneck_level: level
+        };
+    });
 }
 
 // 파이프라인 통계
