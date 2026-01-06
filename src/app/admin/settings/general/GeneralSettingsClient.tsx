@@ -1,32 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PremiumInput } from "@/components/ui/premium-input";
-import { Label } from "@/components/ui/label";
-import { SaveButton } from "@/components/ui/save-button";
-import { Switch } from "@/components/ui/switch";
 import { upsertSetting } from "@/features/settings/actions";
 import { toast } from "sonner";
-import { Globe, Mail, Search, ShieldAlert, BadgeCheck } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Save, Loader2, Globe, Search, Share2, ShieldAlert, LayoutTemplate, Mail, Type } from "lucide-react";
 
 interface GeneralSettingsClientProps {
     initialSettings: Record<string, string>;
 }
 
+type SectionId = 'basic' | 'seo' | 'footer' | 'system';
+
+const SECTIONS: { id: SectionId; label: string; icon: any; description: string }[] = [
+    { id: 'basic', label: 'Basic Information', icon: Globe, description: 'Core identity and contact settings.' },
+    { id: 'seo', label: 'SEO Configuration', icon: Search, description: 'Search engine optimization and metadata.' },
+    { id: 'footer', label: 'Footer & Social', icon: Share2, description: 'Footer content, newsletter, and social links.' },
+    { id: 'system', label: 'System Status', icon: ShieldAlert, description: 'Maintenance mode and access control.' },
+];
+
 export default function GeneralSettingsClient({ initialSettings }: GeneralSettingsClientProps) {
+    const [activeTab, setActiveTab] = useState<SectionId>('basic');
     const [settings, setSettings] = useState(initialSettings);
-    const [dirty, setDirty] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleChange = (key: string, value: string) => {
         setSettings((prev) => ({ ...prev, [key]: value }));
-        setDirty(true);
     };
 
     const handleSave = async () => {
+        setIsSaving(true);
         try {
-            // Save all settings sequentially or parallel
             const promises = Object.entries(settings).map(([key, value]) =>
                 upsertSetting(key, value)
             );
@@ -39,152 +42,245 @@ export default function GeneralSettingsClient({ initialSettings }: GeneralSettin
             }
 
             toast.success("Settings saved successfully.");
-            setDirty(false);
         } catch (error: any) {
             toast.error("Error saving settings", {
                 description: error.message
             });
-            throw error;
+        } finally {
+            setIsSaving(false);
         }
     };
 
+    const activeSection = SECTIONS.find(s => s.id === activeTab);
+
     return (
-        <div className="space-y-6 max-w-4xl mx-auto pb-20">
+        <div className="max-w-7xl mx-auto h-[calc(100vh-100px)] flex flex-col">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center justify-between py-6 border-b border-zinc-800 mb-6 shrink-0">
                 <div>
-                    <h1 className="text-3xl font-[family-name:var(--font-oswald)] font-bold text-white uppercase tracking-wide">
+                    <h1 className="text-3xl font-[family-name:var(--font-oswald)] font-bold text-white uppercase tracking-wide flex items-center gap-3">
+                        <LayoutTemplate className="w-8 h-8 text-red-600" />
                         General Settings
                     </h1>
-                    <p className="text-zinc-400 mt-1">
-                        Manage global parameters for the VidFlow platform.
-                    </p>
+                    <p className="text-zinc-500 mt-1">Manage global parameters for the VidFlow platform.</p>
                 </div>
-                <SaveButton
-                    onSave={handleSave}
-                    disabled={!dirty}
-                    className="shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_20px_rgba(220,38,38,0.5)] bg-red-600 hover:bg-red-700 text-white font-bold tracking-wider"
-                />
+                <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="flex items-center gap-2 bg-red-600 text-white px-8 py-3 rounded-sm font-black hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(220,38,38,0.3)] uppercase tracking-wider"
+                >
+                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                    Save Changes
+                </button>
             </div>
 
-            <Separator className="bg-zinc-800" />
+            <div className="flex flex-1 gap-8 overflow-hidden min-h-0">
+                {/* Sidebar Navigation */}
+                <div className="w-72 shrink-0 flex flex-col gap-2 overflow-y-auto pr-2">
+                    {SECTIONS.map((section) => (
+                        <button
+                            key={section.id}
+                            onClick={() => setActiveTab(section.id)}
+                            className={`w-full text-left p-4 rounded-sm border transition-all group relative overflow-hidden ${activeTab === section.id
+                                    ? "bg-zinc-900 border-red-600/50"
+                                    : "bg-transparent border-transparent hover:bg-zinc-900/50 hover:border-zinc-800"
+                                }`}
+                        >
+                            {activeTab === section.id && (
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600" />
+                            )}
+                            <div className="flex items-center gap-3 mb-1">
+                                <section.icon className={`w-5 h-5 ${activeTab === section.id ? "text-red-500" : "text-zinc-500 group-hover:text-zinc-300"}`} />
+                                <span className={`font-bold uppercase tracking-wide text-sm ${activeTab === section.id ? "text-white" : "text-zinc-400 group-hover:text-zinc-200"}`}>
+                                    {section.label}
+                                </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-600 pl-8 leading-tight group-hover:text-zinc-500 transition-colors line-clamp-2">
+                                {section.description}
+                            </p>
+                        </button>
+                    ))}
+                </div>
 
-            {/* Basic Information */}
-            <Card className="bg-[#0f0f0f] border-zinc-800 shadow-xl overflow-hidden group">
-                <CardHeader className="bg-zinc-900/30 border-b border-zinc-800/50">
-                    <div className="flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-red-500" />
-                        <CardTitle className="text-lg font-[family-name:var(--font-oswald)] tracking-wide uppercase">Basic Information</CardTitle>
-                    </div>
-                    <CardDescription>Core identity settings for your platform.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6 p-6">
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <PremiumInput
-                                id="site_name"
-                                label="Site Name (Brand Text)"
-                                value={settings.site_name || ""}
-                                onChange={(e) => handleChange("site_name", e.target.value)}
-                                className="bg-black/50 border-zinc-700 focus:border-red-500 text-white rounded-sm"
-                                placeholder="VidFlow"
-                            />
+                {/* Main Content Area */}
+                <div className="flex-1 bg-zinc-900/20 border border-zinc-900 rounded-sm p-8 overflow-y-auto custom-scrollbar">
+                    <div className="max-w-3xl mx-auto space-y-8 pb-20">
+                        {/* Section Header */}
+                        <div className="border-b border-zinc-800 pb-6 mb-8">
+                            <h2 className="text-2xl font-[family-name:var(--font-oswald)] font-bold text-white uppercase tracking-wider flex items-center gap-3">
+                                {activeSection?.icon && <activeSection.icon className="w-6 h-6 text-red-600" />}
+                                {activeSection?.label}
+                            </h2>
+                            <p className="text-zinc-500 mt-2">{activeSection?.description}</p>
                         </div>
-                        <div className="space-y-2">
-                            <PremiumInput
-                                id="site_logo_symbol"
-                                label="Logo Symbol (Square Icon)"
-                                value={settings.site_logo_symbol || ""}
-                                onChange={(e) => handleChange("site_logo_symbol", e.target.value)}
-                                className="bg-black/50 border-zinc-700 focus:border-red-500 text-white rounded-sm"
-                                placeholder="V"
-                                maxLength={2}
-                            />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-[2.2rem] z-10 h-4 w-4 text-zinc-500" />
-                                <PremiumInput
-                                    id="support_email"
+
+                        {activeTab === 'basic' && (
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="grid grid-cols-2 gap-6">
+                                    <InputField
+                                        label="Site Name"
+                                        value={settings.site_name || ""}
+                                        onChange={(v) => handleChange("site_name", v)}
+                                        placeholder="VidFlow"
+                                    />
+                                    <InputField
+                                        label="Logo Symbol"
+                                        value={settings.site_logo_symbol || ""}
+                                        onChange={(v) => handleChange("site_logo_symbol", v)}
+                                        placeholder="V"
+                                    />
+                                </div>
+                                <InputField
                                     label="Support Email"
                                     value={settings.support_email || ""}
-                                    onChange={(e) => handleChange("support_email", e.target.value)}
-                                    className="pl-9 bg-black/50 border-zinc-700 focus:border-red-500 text-white rounded-sm"
+                                    onChange={(v) => handleChange("support_email", v)}
                                     placeholder="support@vidflow.com"
+                                    icon={<Mail className="w-4 h-4" />}
                                 />
                             </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                        )}
 
-            {/* SEO Configuration */}
-            <Card className="bg-[#0f0f0f] border-zinc-800 shadow-xl overflow-hidden group">
-                <CardHeader className="bg-zinc-900/30 border-b border-zinc-800/50">
-                    <div className="flex items-center gap-2">
-                        <Search className="w-5 h-5 text-blue-500" />
-                        <CardTitle className="text-lg font-[family-name:var(--font-oswald)] tracking-wide uppercase">SEO Configuration</CardTitle>
-                    </div>
-                    <CardDescription>Optimize how VidFlow appears in search engines.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6 p-6">
-                    <div className="space-y-2">
-                        <PremiumInput
-                            id="seo_title"
-                            label="Default Page Title"
-                            value={settings.seo_title || ""}
-                            onChange={(e) => handleChange("seo_title", e.target.value)}
-                            className="bg-black/50 border-zinc-700 focus:border-blue-500 text-white rounded-sm"
-                            placeholder="VidFlow - Professional Video Production"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="seo_description" className="text-zinc-300">Meta Description</Label>
-                        <textarea
-                            id="seo_description"
-                            value={settings.seo_description || ""}
-                            onChange={(e) => handleChange("seo_description", e.target.value)}
-                            className="w-full min-h-[100px] px-3 py-2 bg-black/50 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-white rounded-sm placeholder:text-zinc-500 text-sm outline-none resize-none transition-colors"
-                            placeholder="A brief description of your platform for search results..."
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+                        {activeTab === 'seo' && (
+                            <div className="grid grid-cols-1 gap-6">
+                                <InputField
+                                    label="Default Page Title"
+                                    value={settings.seo_title || ""}
+                                    onChange={(v) => handleChange("seo_title", v)}
+                                    placeholder="VidFlow - Professional Video Production"
+                                />
+                                <InputField
+                                    label="Meta Keywords"
+                                    value={settings.meta_keywords || ""}
+                                    onChange={(v) => handleChange("meta_keywords", v)}
+                                    placeholder="video, production, bodybuilding, ..."
+                                />
+                                <TextAreaField
+                                    label="Meta Description"
+                                    value={settings.seo_description || ""}
+                                    onChange={(v) => handleChange("seo_description", v)}
+                                    placeholder="A brief description of your platform..."
+                                    rows={4}
+                                />
+                            </div>
+                        )}
 
-            {/* System Status */}
-            <Card className="bg-[#0f0f0f] border-zinc-800 shadow-xl overflow-hidden group">
-                <CardHeader className="bg-zinc-900/30 border-b border-zinc-800/50">
-                    <div className="flex items-center gap-2">
-                        <ShieldAlert className="w-5 h-5 text-amber-500" />
-                        <CardTitle className="text-lg font-[family-name:var(--font-oswald)] tracking-wide uppercase">System Status</CardTitle>
-                    </div>
-                    <CardDescription>Control access and site availability.</CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                    <div className="flex items-center justify-between p-4 bg-amber-950/20 border border-amber-900/30 rounded-sm">
-                        <div className="space-y-1">
-                            <Label htmlFor="maintenance_mode" className="text-base font-bold text-amber-500">Maintenance Mode</Label>
-                            <p className="text-sm text-zinc-400">
-                                When enabled, only administrators can access the site. Users will see a maintenance page.
-                            </p>
-                        </div>
-                        <Switch
-                            id="maintenance_mode"
-                            checked={settings.maintenance_mode === "true"}
-                            onCheckedChange={(checked) => handleChange("maintenance_mode", String(checked))}
-                            className="data-[state=checked]:bg-amber-600"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+                        {activeTab === 'footer' && (
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="space-y-6 pb-6 border-b border-zinc-800/50">
+                                    <TextAreaField
+                                        label="Footer Brand Description"
+                                        value={settings.footer_description || ""}
+                                        onChange={(v) => handleChange("footer_description", v)}
+                                        placeholder="The definitive platform..."
+                                        rows={3}
+                                    />
+                                </div>
 
-            {/* Developer Info */}
-            <div className="flex justify-center text-zinc-600 text-xs uppercase tracking-widest mt-12">
-                <span className="flex items-center gap-2">
-                    <BadgeCheck className="w-3 h-3" />
-                    Secure Configuration • v2.0.0
-                </span>
+                                <div className="space-y-6 pb-6 border-b border-zinc-800/50">
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Newsletter Section</h3>
+                                    <InputField
+                                        label="Newsletter Title"
+                                        value={settings.footer_newsletter_title || ""}
+                                        onChange={(v) => handleChange("footer_newsletter_title", v)}
+                                        placeholder="Stay Updated"
+                                    />
+                                    <TextAreaField
+                                        label="Newsletter Text"
+                                        value={settings.footer_newsletter_text || ""}
+                                        onChange={(v) => handleChange("footer_newsletter_text", v)}
+                                        placeholder="Join the elite circle..."
+                                        rows={2}
+                                    />
+                                </div>
+
+                                <div className="space-y-6">
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Social Links</h3>
+                                    <InputField
+                                        label="Instagram URL"
+                                        value={settings.social_instagram || ""}
+                                        onChange={(v) => handleChange("social_instagram", v)}
+                                        placeholder="https://instagram.com/..."
+                                    />
+                                    <InputField
+                                        label="YouTube URL"
+                                        value={settings.social_youtube || ""}
+                                        onChange={(v) => handleChange("social_youtube", v)}
+                                        placeholder="https://youtube.com/..."
+                                    />
+                                    <InputField
+                                        label="Twitter/X URL"
+                                        value={settings.social_twitter || ""}
+                                        onChange={(v) => handleChange("social_twitter", v)}
+                                        placeholder="https://twitter.com/..."
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'system' && (
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="bg-amber-950/20 border border-amber-900/30 p-6 rounded-sm flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <div className="text-base font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+                                            <ShieldAlert className="w-5 h-5" />
+                                            Maintenance Mode
+                                        </div>
+                                        <p className="text-sm text-zinc-400">
+                                            When enabled, only administrators can access the site.
+                                        </p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={settings.maintenance_mode === "true"}
+                                            onChange={(e) => handleChange("maintenance_mode", String(e.target.checked))}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
+        </div>
+    );
+}
+
+function InputField({ label, value, onChange, placeholder, icon }: { label: string, value: string, onChange: (v: string) => void, placeholder?: string, icon?: React.ReactNode }) {
+    return (
+        <div className="space-y-2">
+            <label className="block text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">{label}</label>
+            <div className="relative">
+                {icon && (
+                    <div className="absolute left-4 top-3.5 text-zinc-500">
+                        {icon}
+                    </div>
+                )}
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    className={`w-full bg-zinc-950 border border-zinc-800 px-4 py-3 text-white focus:border-red-600 outline-none transition-all font-medium rounded-sm ${icon ? "pl-11" : ""}`}
+                />
+            </div>
+        </div>
+    );
+}
+
+function TextAreaField({ label, value, onChange, placeholder, rows = 3 }: { label: string, value: string, onChange: (v: string) => void, placeholder?: string, rows?: number }) {
+    return (
+        <div className="space-y-2">
+            <label className="block text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">{label}</label>
+            <textarea
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                rows={rows}
+                className="w-full bg-zinc-950 border border-zinc-800 px-4 py-3 text-white focus:border-red-600 outline-none transition-all font-medium leading-relaxed rounded-sm"
+            />
         </div>
     );
 }

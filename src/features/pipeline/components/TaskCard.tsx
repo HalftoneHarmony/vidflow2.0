@@ -114,31 +114,7 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
         return styles;
     };
 
-    // Prominent Stuck Badge
-    const getStuckBadge = () => {
-        if (card.stage === "DELIVERED") return null;
-        if (isStuck7) {
-            return (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 flex items-center shadow-lg">
-                    <div className="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-b-md flex items-center gap-1.5 animate-pulse shadow-md border border-t-0 border-red-400/50">
-                        <AlertTriangle className="h-3 w-3" />
-                        <span>+{deltaDays} DAYS</span>
-                    </div>
-                </div>
-            );
-        }
-        if (isStuck3) {
-            return (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 flex items-center shadow-lg">
-                    <div className="bg-orange-500 text-white text-[9px] font-black px-2 py-0.5 rounded-b-md flex items-center gap-1.5 shadow-md border border-t-0 border-orange-300/50">
-                        <AlertTriangle className="h-3 w-3" />
-                        <span>+{deltaDays} DAYS</span>
-                    </div>
-                </div>
-            );
-        }
-        return null;
-    };
+
 
     // Handle clicks
     const handleClick = (e: React.MouseEvent) => {
@@ -179,8 +155,7 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
                 onClick={handleSelectClick}
                 className={`
                     absolute top-3 right-3 z-30 transition-all duration-200 cursor-pointer
-                    ${selectionMode ? 'opacity-100 scale-100' : 'opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100'}
-                    ${(isStuck7 || isStuck3) ? 'mt-6' : ''} 
+                    ${selectionMode ? 'opacity-100 scale-100' : 'opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100'} 
                 `}
             >
                 {/* Adjusted top position dynamically or via class logic to avoid overlapping badge if needed, 
@@ -193,8 +168,7 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
                 )}
             </div>
 
-            {/* Corner Badge for Stuck Status */}
-            {getStuckBadge()}
+
 
             {/* Main Content Areas: Split Left/Right */}
             <div className="flex justify-between items-start gap-2 mb-2 relative z-10 min-h-[50px]">
@@ -283,8 +257,19 @@ export function TaskCard({ card, onClick, isOverlay, isSelected, onToggleSelect,
                     </span>
                 </div>
 
-                {/* Delivered Status or Files */}
-                <div className="flex items-center gap-1">
+                {/* Right Side: Warning & Status */}
+                <div className="flex items-center gap-1.5">
+                    {/* Warning Badge (Moved to bottom) */}
+                    {(isStuck7 || isStuck3) && (
+                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-bold ${isStuck7
+                            ? "bg-red-500/10 text-red-500 border-red-500/20"
+                            : "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                            }`}>
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            <span>+{deltaDays}Day</span>
+                        </div>
+                    )}
+
                     {card.deliverables && card.deliverables.length > 0 && !(card.stage === "DELIVERED") && (
                         <span className="text-[9px] font-mono text-zinc-600 bg-zinc-900/50 px-1 py-0.5 rounded border border-zinc-900">
                             {card.deliverables.length} FILES

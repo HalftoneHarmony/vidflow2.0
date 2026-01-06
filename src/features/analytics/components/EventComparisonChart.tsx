@@ -37,6 +37,8 @@ export type EventAnalyticsData = {
     net_profit: number;
     profit_margin?: number;
     package_counts?: Record<string, number>;
+    discipline_counts?: Record<string, number>; // New
+    discipline_revenue?: Record<string, number>; // New
 };
 
 type Props = {

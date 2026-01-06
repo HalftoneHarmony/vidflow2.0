@@ -15,6 +15,13 @@ export default async function GeneralSettingsPage() {
         "support_email",
         "seo_title",
         "seo_description",
+        "meta_keywords",
+        "footer_description",
+        "footer_newsletter_title",
+        "footer_newsletter_text",
+        "social_instagram",
+        "social_youtube",
+        "social_twitter",
         "maintenance_mode"
     ];
 

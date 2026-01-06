@@ -20,11 +20,23 @@ interface AboutClientProps {
     heroSubtitle?: string;
     narrativeTitle?: string;
     narrativeSubtext?: string;
+    bgText?: string;
     stats?: StatItem[];
     manifestoTitle?: string;
     manifestoItems?: ManifestoItem[];
+    manifestoQuote?: string;
+    manifestoBadge?: string;
     ctaTitle?: string;
     ctaDesc?: string;
+    ctaBtn?: string;
+    footerBrand?: string;
+    estDate?: string;
+    heroBtnPrimary?: string;
+    heroBtnSecondary?: string;
+    heroImage?: string;
+    gridImage?: string;
+    manifestoImage?: string;
+    manifestoLabel?: string;
 }
 
 const defaultStats: StatItem[] = [
@@ -57,11 +69,23 @@ export function AboutClient({
     heroSubtitle = "The premier engine for high-performance visual storytelling and elite production management.",
     narrativeTitle = "Built for Impact.",
     narrativeSubtext = "WE DON'T DO \"STORYTELLING\". WE DO VISUAL ARCHITECTURE.",
+    bgText = "ALPHA",
     stats = defaultStats,
     manifestoTitle = "The Code of Excellence",
     manifestoItems = defaultManifesto,
+    manifestoQuote = "PERFECTION ISN'T THE GOAL. <br /> DOMINANCE IS.",
+    manifestoBadge = "ULTRA PREMIUM <br /> QUALITY ENGINE",
     ctaTitle = "Ready to Flow?",
     ctaDesc = "Join the ranks of high-performance athletes and directors who trust VidFlow for their most critical productions.",
+    ctaBtn = "Get Started",
+    footerBrand = "VIDFLOW",
+    estDate = "Est. 2026",
+    heroBtnPrimary = "Explore Our Work",
+    heroBtnSecondary = "The Mission",
+    heroImage = "/images/about/hero.png",
+    gridImage = "/grid.svg",
+    manifestoImage = "/images/about/hero.png",
+    manifestoLabel = "Manifesto",
 }: AboutClientProps) {
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -85,7 +109,7 @@ export function AboutClient({
                 {/* Background Image with Overlay */}
                 <div className="absolute inset-0 z-0">
                     <Image
-                        src="/images/about/hero.png"
+                        src={heroImage}
                         alt="Cinematic Hero"
                         fill
                         className="object-cover opacity-50"
@@ -103,7 +127,7 @@ export function AboutClient({
                         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
                     >
                         <span className="inline-block px-4 py-1.5 mb-8 text-[10px] font-black tracking-[0.5em] text-red-600 uppercase border border-red-600/30 bg-red-600/10 rounded-sm">
-                            Est. 2026
+                            {estDate}
                         </span>
                         <h1 className="text-6xl md:text-[10rem] font-black mb-8 tracking-tighter uppercase leading-[0.8] drop-shadow-[0_0_30px_rgba(255,0,0,0.2)]">
                             {title}
@@ -113,11 +137,11 @@ export function AboutClient({
                         </p>
                         <div className="flex flex-col md:flex-row items-center justify-center gap-6">
                             <button className="group relative px-12 py-5 overflow-hidden bg-red-600 text-white font-black uppercase tracking-widest transition-all">
-                                <span className="relative z-10">Explore Our Work</span>
+                                <span className="relative z-10">{heroBtnPrimary}</span>
                                 <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 mix-blend-difference" />
                             </button>
                             <button className="px-12 py-5 border border-zinc-800 bg-zinc-950/50 backdrop-blur-md text-white font-black uppercase tracking-widest hover:bg-zinc-900 transition-all border-l-4 border-l-red-600">
-                                The Mission
+                                {heroBtnSecondary}
                             </button>
                         </div>
                     </motion.div>
@@ -143,7 +167,7 @@ export function AboutClient({
 
                 {/* Animated Background Text */}
                 <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none opacity-[0.02]">
-                    <span className="text-[40vw] font-black select-none tracking-tighter leading-none">ALPHA</span>
+                    <span className="text-[40vw] font-black select-none tracking-tighter leading-none">{bgText}</span>
                 </div>
 
                 <div className="container mx-auto px-6 relative z-20">
@@ -192,7 +216,10 @@ export function AboutClient({
 
             {/* Stats Section with Grid Background */}
             <section className="py-32 border-y border-zinc-900 bg-black relative">
-                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5" />
+                <div
+                    className="absolute inset-0 opacity-5"
+                    style={{ backgroundImage: `url('${gridImage}')` }}
+                />
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-24">
                         {stats.map((stat, i) => {
@@ -220,7 +247,7 @@ export function AboutClient({
                 <div className="container mx-auto px-6">
                     <div className="flex flex-col md:flex-row gap-24 items-start">
                         <div className="w-full md:w-1/2">
-                            <span className="text-red-600 font-black tracking-[0.4em] uppercase text-xs mb-4 block">Manifesto</span>
+                            <span className="text-red-600 font-black tracking-[0.4em] uppercase text-xs mb-4 block">{manifestoLabel}</span>
                             <h2 className="text-6xl md:text-8xl font-black mb-16 tracking-tighter uppercase leading-[0.9]">
                                 {manifestoTitle.split(' ').map((word, i) => (
                                     <span key={i}>
@@ -256,7 +283,7 @@ export function AboutClient({
                         <div className="w-full md:w-1/2 relative group">
                             <div className="aspect-[3/4] bg-zinc-900 relative overflow-hidden">
                                 <Image
-                                    src="/images/about/hero.png"
+                                    src={manifestoImage}
                                     alt="Manifesto Visualization"
                                     fill
                                     className="object-cover grayscale brightness-50 group-hover:scale-105 group-hover:brightness-75 transition-all duration-1000"
@@ -269,7 +296,7 @@ export function AboutClient({
                                 <div className="absolute bottom-12 left-12 right-12">
                                     <div className="p-8 bg-black/80 backdrop-blur-xl border border-zinc-800 border-l-4 border-l-red-600">
                                         <p className="text-white font-black uppercase tracking-widest text-lg leading-tight">
-                                            "PERFECTION ISN'T THE GOAL. <br /> DOMINANCE IS."
+                                            <span dangerouslySetInnerHTML={{ __html: manifestoQuote }} />
                                         </p>
                                     </div>
                                 </div>
@@ -277,9 +304,8 @@ export function AboutClient({
 
                             {/* Floating Badge */}
                             <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-red-600 flex items-center justify-center p-4 text-center transform -rotate-12 shadow-2xl">
-                                <span className="text-[10px] font-black uppercase tracking-tighter leading-none text-white">
-                                    ULTRA PREMIUM <br /> QUALITY ENGINE
-                                </span>
+                                <span className="text-[10px] font-black uppercase tracking-tighter leading-none text-white" dangerouslySetInnerHTML={{ __html: manifestoBadge }} />
+
                             </div>
                         </div>
                     </div>
@@ -296,18 +322,16 @@ export function AboutClient({
                         viewport={{ once: true }}
                     >
                         <h2 className="text-5xl md:text-8xl font-black mb-12 tracking-tighter uppercase leading-[0.8]">
-                            {ctaTitle.split('Ready to').map((text, i) => (
-                                <span key={i}>
-                                    {i === 0 ? "Ready to " : <span className="text-red-600">{text}</span>}
-                                </span>
-                            ))}
+                            {/* Just render the title. If users want color, they can use HTML in the future or we add a separate color field later.
+                                 For now, removing the broken split behavior. */}
+                            {ctaTitle}
                         </h2>
                         <p className="text-zinc-400 max-w-2xl mx-auto text-xl mb-16 font-light">
                             {ctaDesc}
                         </p>
                         <div className="flex flex-wrap justify-center gap-6">
                             <button className="px-16 py-6 bg-white text-black font-black uppercase tracking-widest hover:bg-zinc-200 transition-all flex items-center gap-4">
-                                Get Started <Play className="w-4 h-4 fill-black" />
+                                {ctaBtn} <Play className="w-4 h-4 fill-black" />
                             </button>
                         </div>
                     </motion.div>
@@ -319,7 +343,7 @@ export function AboutClient({
                 <div className="container mx-auto px-6">
                     <div className="opacity-10 hover:opacity-100 transition-opacity text-center overflow-hidden">
                         <h2 className="text-[15vw] font-black tracking-tighter text-zinc-800 leading-none select-none translate-y-8">
-                            VIDFLOW
+                            {footerBrand}
                         </h2>
                     </div>
                 </div>

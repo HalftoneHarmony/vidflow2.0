@@ -81,6 +81,7 @@ export async function getEventProfitability(eventId: number): Promise<EventProfi
     return data as EventProfitability;
 }
 
+
 export type EventAnalyticsData = {
     event_id: number;
     event_title: string;
@@ -91,9 +92,11 @@ export type EventAnalyticsData = {
     total_expenses: number;
     total_orders: number;
     package_counts: Record<string, number>;
+    discipline_counts: Record<string, number>; // New
+    discipline_revenue: Record<string, number>; // New
 };
 
-// 이벤트 분석 뷰 조회 및 패키지 분포 집계
+// 이벤트 분석 뷰 조회 및 패키지/종목 분포 집계
 export async function getEventAnalytics(): Promise<EventAnalyticsData[]> {
     const supabase = await createClient();
 
@@ -108,27 +111,35 @@ export async function getEventAnalytics(): Promise<EventAnalyticsData[]> {
         return [];
     }
 
-    // 2. 패키지 분포 데이터 조회 (전체 주문 + 패키지 JOIN)
-    // Note: 대규모 데이터셋에서는 성능 이슈가 있을 수 있으나 현재 규모에서는 괜찮음.
-    // 추후 event_id 별로 분할 조회하거나 DB 함수로 이관 권장.
+    // 2. 패키지 및 종목 분포 데이터 조회 (전체 주문 + 패키지 JOIN)
     const { data: orderData, error: orderError } = await supabase
         .from("orders")
-        .select("event_id, packages(name)");
+        .select("event_id, packages(name), discipline, amount");
 
     if (orderError) {
-        console.error("Error fetching order packages:", orderError);
+        console.error("Error fetching order details:", orderError);
         // 실패해도 기본 데이터는 리턴
     }
 
     return (analyticsData || []).map((event: any) => {
         const eventOrders = orderData?.filter((o: any) => o.event_id === event.event_id) || [];
 
-        // 패키지별 카운트 집계
-        const package_counts = eventOrders.reduce((acc: Record<string, number>, curr: any) => {
-            const pkg = curr.packages?.name || "Unspecified";
-            acc[pkg] = (acc[pkg] || 0) + 1;
-            return acc;
-        }, {});
+        const package_counts: Record<string, number> = {};
+        const discipline_counts: Record<string, number> = {};
+        const discipline_revenue: Record<string, number> = {};
+
+        eventOrders.forEach((o: any) => {
+            // Package Stats
+            const pkg = o.packages?.name || "Unspecified";
+            package_counts[pkg] = (package_counts[pkg] || 0) + 1;
+
+            // Discipline Stats (New)
+            const discipline = o.discipline || "미지정";
+            const amount = Number(o.amount) || 0;
+
+            discipline_counts[discipline] = (discipline_counts[discipline] || 0) + 1;
+            discipline_revenue[discipline] = (discipline_revenue[discipline] || 0) + amount;
+        });
 
         return {
             event_id: event.event_id,
@@ -140,7 +151,9 @@ export async function getEventAnalytics(): Promise<EventAnalyticsData[]> {
             total_expenses: Number(event.total_expenses || 0),
             total_orders: Number(event.total_orders || 0),
             profit_margin: Number(event.profit_margin_pct || 0),
-            package_counts
+            package_counts,
+            discipline_counts, // New
+            discipline_revenue // New
         };
     });
 }
@@ -455,3 +468,69 @@ export async function getPackageAnalytics(): Promise<PackageStats[]> {
         }))
         .sort((a, b) => b.total_orders - a.total_orders);
 }
+
+// =============================================
+// 턴어라운드 타임 (작업 소요 시간) 분석
+// =============================================
+
+export type TurnaroundStat = {
+    event_title: string;
+    event_date: string;
+    avg_days: number;
+    completed_count: number;
+    min_days: number;
+    max_days: number;
+};
+
+export async function getTurnaroundStats(): Promise<TurnaroundStat[]> {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase
+        .from("pipeline_cards")
+        .select(`
+            updated_at,
+            stage,
+            order_node:orders!inner (
+                created_at,
+                event_node:events!inner (title, event_date)
+            )
+        `)
+        .in("stage", ["READY", "DELIVERED"]);
+
+    if (error) {
+        console.error("Error fetching turnaround stats:", error);
+        return [];
+    }
+
+    const eventStatsMap = new Map<string, { daysList: number[]; eventDate: string }>();
+
+    data?.forEach((card: any) => {
+        const eventTitle = card.order_node?.event_node?.title;
+        const eventDateStr = card.order_node?.event_node?.event_date;
+
+        if (!eventTitle || !eventDateStr || !card.updated_at) return;
+
+        const eventDate = new Date(eventDateStr);
+        const completedDate = new Date(card.updated_at);
+
+        const diffMs = completedDate.getTime() - eventDate.getTime();
+        const diffDays = Math.max(0, diffMs / (1000 * 60 * 60 * 24));
+
+        if (!eventStatsMap.has(eventTitle)) {
+            eventStatsMap.set(eventTitle, { daysList: [], eventDate: eventDateStr });
+        }
+        eventStatsMap.get(eventTitle)!.daysList.push(diffDays);
+    });
+
+    return Array.from(eventStatsMap.entries())
+        .map(([title, { daysList, eventDate }]) => ({
+            event_title: title,
+            event_date: eventDate,
+            avg_days: daysList.reduce((sum, d) => sum + d, 0) / daysList.length,
+            completed_count: daysList.length,
+            min_days: Math.min(...daysList),
+            max_days: Math.max(...daysList)
+        }))
+        .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
+}
+

@@ -18,6 +18,7 @@ interface NavbarProps {
 
 const navItems = [
     { href: "/showcase", label: "Showcase", highlight: true },
+    { href: "/portfolio", label: "Portfolio" },
     { href: "/about", label: "About" },
     { href: "/events", label: "Events" },
     { href: "/support", label: "Support" },

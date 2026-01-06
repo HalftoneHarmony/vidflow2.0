@@ -24,7 +24,8 @@ import {
     ShoppingCart,
     Boxes,
     HeadphonesIcon,
-    Wrench
+    Wrench,
+    Clapperboard
 } from "lucide-react";
 import { signOut } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -96,6 +97,7 @@ const navGroups: NavGroup[] = [
             { href: "/admin/events", icon: Calendar, label: "Events", description: "대회 관리" },
             { href: "/admin/products", icon: PackageIcon, label: "Products", description: "패키지 관리" },
             { href: "/admin/showcase", icon: Film, label: "Showcase", description: "쇼케이스 관리" },
+            { href: "/admin/portfolio", icon: Clapperboard, label: "Portfolio", description: "작품 관리" },
         ],
     },
     {

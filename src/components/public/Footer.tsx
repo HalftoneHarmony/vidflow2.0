@@ -8,9 +8,24 @@ import { motion } from "framer-motion";
 interface FooterProps {
     siteName: string;
     siteLogo: string;
+    footerDesc?: string;
+    newsletterTitle?: string;
+    newsletterText?: string;
+    socials?: {
+        instagram?: string;
+        youtube?: string;
+        twitter?: string;
+    };
 }
 
-export function Footer({ siteName, siteLogo }: FooterProps) {
+export function Footer({
+    siteName,
+    siteLogo,
+    footerDesc = "The definitive platform for bodybuilding cinematography. Built for impact. Designed for domination.",
+    newsletterTitle = "Stay Updated",
+    newsletterText = "Join the elite circle. Get updates on new features and exclusive events.",
+    socials
+}: FooterProps) {
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
 
@@ -42,20 +57,25 @@ export function Footer({ siteName, siteLogo }: FooterProps) {
                             </span>
                         </Link>
                         <p className="text-zinc-500 max-w-sm mb-8 leading-relaxed font-light text-lg">
-                            The definitive platform for bodybuilding cinematography.
-                            Built for impact. Designed for domination.
+                            {footerDesc}
                         </p>
 
                         <div className="flex gap-4">
-                            {['Instagram', 'Youtube', 'Twitter'].map((social) => (
-                                <a
-                                    key={social}
-                                    href="#"
-                                    className="text-zinc-600 hover:text-red-600 uppercase text-xs font-bold tracking-widest border border-zinc-800 px-4 py-2 hover:border-red-600/50 transition-all"
-                                >
-                                    {social}
+                            {socials?.instagram && (
+                                <a href={socials.instagram} target="_blank" rel="noreferrer" className="text-zinc-600 hover:text-red-600 uppercase text-xs font-bold tracking-widest border border-zinc-800 px-4 py-2 hover:border-red-600/50 transition-all">
+                                    Instagram
                                 </a>
-                            ))}
+                            )}
+                            {socials?.youtube && (
+                                <a href={socials.youtube} target="_blank" rel="noreferrer" className="text-zinc-600 hover:text-red-600 uppercase text-xs font-bold tracking-widest border border-zinc-800 px-4 py-2 hover:border-red-600/50 transition-all">
+                                    Youtube
+                                </a>
+                            )}
+                            {socials?.twitter && (
+                                <a href={socials.twitter} target="_blank" rel="noreferrer" className="text-zinc-600 hover:text-red-600 uppercase text-xs font-bold tracking-widest border border-zinc-800 px-4 py-2 hover:border-red-600/50 transition-all">
+                                    Twitter
+                                </a>
+                            )}
                         </div>
                     </div>
 
@@ -65,11 +85,16 @@ export function Footer({ siteName, siteLogo }: FooterProps) {
                             Platform
                         </h4>
                         <ul className="space-y-4">
-                            {['Showcase', 'Events', 'About Us', 'Pricing', 'Contact'].map((item) => (
-                                <li key={item}>
-                                    <Link href="#" className="text-zinc-500 hover:text-white transition-colors uppercase tracking-wider text-sm font-medium flex items-center gap-2 group">
+                            {[
+                                { label: 'Showcase', href: '/showcase' },
+                                { label: 'Events', href: '/events' },
+                                { label: 'About Us', href: '/about' },
+                                { label: 'Contact', href: '/support' }
+                            ].map((item) => (
+                                <li key={item.label}>
+                                    <Link href={item.href} className="text-zinc-500 hover:text-white transition-colors uppercase tracking-wider text-sm font-medium flex items-center gap-2 group">
                                         <span className="w-0 group-hover:w-2 h-[1px] bg-red-600 transition-all duration-300" />
-                                        {item}
+                                        {item.label}
                                     </Link>
                                 </li>
                             ))}
@@ -79,10 +104,10 @@ export function Footer({ siteName, siteLogo }: FooterProps) {
                     {/* Newsletter Column */}
                     <div className="md:col-span-4">
                         <h4 className="text-white font-black uppercase tracking-widest text-sm mb-8 text-red-600">
-                            Stay Updated
+                            {newsletterTitle}
                         </h4>
                         <p className="text-zinc-500 text-sm mb-6">
-                            Join the elite circle. Get updates on new features and exclusive events.
+                            {newsletterText}
                         </p>
 
                         <form onSubmit={handleSubmit} className="relative">

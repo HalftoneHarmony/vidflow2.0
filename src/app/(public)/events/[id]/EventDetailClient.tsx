@@ -343,13 +343,17 @@ export function EventDetailClient({
                         <div className="space-y-3">
                             <Input
                                 type="text"
-                                placeholder="예: 42, A-15, 김철수"
+                                inputMode="numeric"
+                                placeholder="예: 42"
                                 value={athleteNumber}
-                                onChange={(e) => setAthleteNumber(e.target.value)}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/[^0-9]/g, "");
+                                    setAthleteNumber(value);
+                                }}
                                 className="w-full bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-red-500 focus:ring-red-500/20"
                             />
                             <p className="text-sm text-zinc-500">
-                                * 대회 엔트리 번호, 등번호, 또는 이름을 입력해주세요.
+                                * 대회 엔트리 번호를 숫자로 입력해주세요.
                             </p>
                         </div>
                     </div>

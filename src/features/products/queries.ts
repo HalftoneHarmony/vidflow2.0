@@ -67,9 +67,10 @@ export async function getActivePackages(): Promise<Product[]> {
         .from("packages")
         .select(`
             *,
-            events (
+            events!inner (
                 title,
-                event_date
+                event_date,
+                is_active
             ),
             showcase_items (
                 id,
@@ -79,6 +80,7 @@ export async function getActivePackages(): Promise<Product[]> {
             )
         `)
         .eq("is_sold_out", false)
+        .eq("events.is_active", true)
         .order("id", { ascending: false });
 
     if (error) {

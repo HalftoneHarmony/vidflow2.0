@@ -8,11 +8,11 @@ import { createClient } from "@/lib/supabase/server";
 import { getAllPipelineCards } from "@/features/pipeline/queries";
 import { getAdminEvents } from "@/features/events/queries";
 import { getComprehensiveStats, getWeeklyStats, getPipelineBottleneck } from "@/features/analytics/actions";
-import { getActiveAnnouncements } from "@/features/admin/actions";
+
 import { format } from "date-fns";
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
-import { DashboardAnnouncementBanner } from "./announcement-banner";
+
 import { QuickActions } from "@/components/admin/dashboard/quick-actions";
 
 export const dynamic = "force-dynamic";
@@ -180,12 +180,11 @@ export default async function DashboardPage() {
     const supabase = await createClient();
 
     // Data Fetching - 병렬 실행
-    const [pipelineCards, allEvents, comprehensiveStats, weeklyStats, announcements, pipelineBottleneck] = await Promise.all([
+    const [pipelineCards, allEvents, comprehensiveStats, weeklyStats, pipelineBottleneck] = await Promise.all([
         getAllPipelineCards(supabase),
         getAdminEvents(),
         getComprehensiveStats(),
         getWeeklyStats(),
-        getActiveAnnouncements(),
         getPipelineBottleneck(),
     ]);
 
@@ -218,7 +217,6 @@ export default async function DashboardPage() {
 
     return (
         <DashboardClientWrapper
-            banner={<DashboardAnnouncementBanner announcements={announcements} />}
             header={
                 <div className="space-y-6">
                     <div className="flex justify-between items-end border-b border-zinc-800 pb-6">

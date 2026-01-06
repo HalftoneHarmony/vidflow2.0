@@ -10,6 +10,7 @@ import {
     getEventAnalytics,
     getDisciplineAnalytics,
     getPackageAnalytics,
+    getTurnaroundStats,
 } from "@/features/analytics/actions";
 import { getAllEventsProfitSummary } from "@/features/finance/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -43,6 +44,7 @@ export default async function AnalyticsPage() {
         eventAnalytics,
         disciplineAnalytics,
         packageAnalytics,
+        turnaroundStats,
     ] = await Promise.all([
         getDailyRevenue(30),
         getMonthlyGrowth(),
@@ -52,6 +54,7 @@ export default async function AnalyticsPage() {
         getEventAnalytics(),
         getDisciplineAnalytics(),
         getPackageAnalytics(),
+        getTurnaroundStats(),
     ]);
 
     // 2. Fetch Finance Data (from FinancePage)
@@ -147,6 +150,7 @@ export default async function AnalyticsPage() {
                 customerSegments={customerSegments}
                 customerLTV={customerLTV}
                 pipelineBottleneck={pipelineBottleneck}
+                turnaroundStats={turnaroundStats}
                 eventAnalytics={eventAnalytics}
                 disciplineAnalytics={disciplineAnalytics}
                 packageAnalytics={packageAnalytics}

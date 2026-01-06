@@ -19,7 +19,17 @@ export default async function PublicLayout({
     const { data: { user } } = await supabase.auth.getUser();
 
     // Fetch Settings
-    const settings = await getSettings(["site_name", "site_logo_symbol"]);
+    const settings = await getSettings([
+        "site_name",
+        "site_logo_symbol",
+        "footer_description",
+        "footer_newsletter_title",
+        "footer_newsletter_text",
+        "social_instagram",
+        "social_youtube",
+        "social_twitter"
+    ]);
+
     const siteName = settings.site_name || "VidFlow";
     const siteLogo = settings.site_logo_symbol || "V";
 
@@ -31,7 +41,18 @@ export default async function PublicLayout({
                 {children}
             </main>
 
-            <Footer siteName={siteName} siteLogo={siteLogo} />
+            <Footer
+                siteName={siteName}
+                siteLogo={siteLogo}
+                footerDesc={settings.footer_description}
+                newsletterTitle={settings.footer_newsletter_title}
+                newsletterText={settings.footer_newsletter_text}
+                socials={{
+                    instagram: settings.social_instagram,
+                    youtube: settings.social_youtube,
+                    twitter: settings.social_twitter
+                }}
+            />
         </div>
     );
 }

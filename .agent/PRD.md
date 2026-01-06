@@ -65,7 +65,7 @@ VidFlow Manager 2.0은 보디빌딩 대회 영상 프로덕션의 전 과정을 
 
 ### 5.2 Production Pipeline (공정 엔진)
 
-- **5-Stage Kanban Board**: `WAITING` → `SHOOTING` → `EDITING` → `READY` → `DELIVERED`의 흐름 관리.
+- **5-Stage Kanban Board**: `WAITING` → `EDITING` → `READY` → `DELIVERED`의 흐름 관리.
     
 - **Bottleneck Alert**: 특정 스테이지에 일정 기간(예: 3일) 이상 머무를 경우 관리자 대시보드에 **'지연 경고'** 표시.
     

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useInView, useMotionValue, useSpring } from "framer-motion";
-import { ShoppingBag, MessageSquare, Heart } from "lucide-react";
+import { ShoppingBag, MessageSquare } from "lucide-react";
 
 interface StatProps {
     label: string;
@@ -41,12 +41,11 @@ function Counter({ value }: { value: number }) {
 export function DashboardStats({ orderCount = 0, inquiryCount = 0 }) {
     const stats: StatProps[] = [
         { label: "MY ORDERS", value: orderCount, icon: ShoppingBag },
-        { label: "WISH LIST", value: 0, icon: Heart }, // Placeholder for wishlist
         { label: "INQUIRIES", value: inquiryCount, icon: MessageSquare },
     ];
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-2 gap-4 mb-12">
             {stats.map((stat) => (
                 <div
                     key={stat.label}

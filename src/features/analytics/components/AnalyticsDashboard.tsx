@@ -23,6 +23,8 @@ import { ExpenseDetailSection } from "@/features/finance/components/ExpenseDetai
 import { CostBreakdownChart } from "@/features/finance/components/FinanceCharts";
 import { MotionCard } from "@/components/ui/motion-card";
 import { AnimatedNumber } from "@/components/ui/animated-number";
+import { TurnaroundTimeChart } from "./TurnaroundTimeChart";
+import { TurnaroundStat } from "../actions";
 
 // ==========================================
 // Types
@@ -38,6 +40,7 @@ type Props = {
     customerSegments: any;
     customerLTV: CustomerLTV[];
     pipelineBottleneck: any;
+    turnaroundStats?: TurnaroundStat[];
     eventAnalytics: EventAnalyticsData[];
     disciplineAnalytics: DisciplineStats[];
     packageAnalytics: PackageStats[];
@@ -117,7 +120,16 @@ function KPICard({ label, rawValue, value, trend, subLabel, icon: Icon, color = 
 // Package Distribution Chart (Enhanced with Toggle)
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'];
 
-const PackageDistributionChart = ({ data, type }: { data: { name: string; value: number }[], type: "pie" | "bar" }) => {
+// Generic Distribution Chart (Pie/Bar) with customizable formatter
+const GenericDistributionChart = ({
+    data,
+    type,
+    formatter = (v: number) => v.toLocaleString()
+}: {
+    data: { name: string; value: number }[],
+    type: "pie" | "bar",
+    formatter?: (value: number) => string
+}) => {
     if (type === "pie") {
         return (
             <ResponsiveContainer width="100%" height="100%" minHeight={200}>
@@ -138,11 +150,12 @@ const PackageDistributionChart = ({ data, type }: { data: { name: string; value:
                     <RechartsTooltip
                         contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
                         itemStyle={{ color: '#e4e4e7', fontSize: '12px' }}
+                        formatter={(value: any) => formatter(Number(value) || 0)}
                     />
                     <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
                         <tspan x="50%" dy="-1em" fontSize="12" fill="#71717a">TOTAL</tspan>
-                        <tspan x="50%" dy="1.5em" fontSize="24" fontWeight="bold" fill="#fff">
-                            {data.reduce((acc, curr) => acc + curr.value, 0)}
+                        <tspan x="50%" dy="1.5em" fontSize="18" fontWeight="bold" fill="#fff">
+                            {formatter(data.reduce((acc, curr) => acc + curr.value, 0))}
                         </tspan>
                     </text>
                 </RechartsPieChart>
@@ -168,6 +181,7 @@ const PackageDistributionChart = ({ data, type }: { data: { name: string; value:
                     cursor={{ fill: '#ffffff10' }}
                     contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
                     itemStyle={{ color: '#e4e4e7', fontSize: '12px' }}
+                    formatter={(value: any) => formatter(Number(value) || 0)}
                 />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
                     {data.map((entry, index) => (
@@ -194,10 +208,12 @@ export function AnalyticsDashboard({
     eventList,
     totalStats,
     financeChartData,
+    turnaroundStats,
 }: Props) {
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
     const [showExpenseTable, setShowExpenseTable] = useState(false);
-    const [packageChartType, setPackageChartType] = useState<"pie" | "bar">("pie");
+    const [chartType, setChartType] = useState<"pie" | "bar">("pie");
+    const [breakdownView, setBreakdownView] = useState<"package" | "discipline" | "revenue">("package");
 
     // KPI Calc (DB uses revenue, revenue_growth_pct columns)
     const currentMonth = monthlyGrowth[0] || { revenue: 0, orders: 0, revenue_growth_pct: 0 };
@@ -214,10 +230,34 @@ export function AnalyticsDashboard({
 
     const selectedEvent = eventAnalytics.find(e => e.event_id === selectedEventId);
 
-    // Package Chart Data
-    const packageChartData = selectedEvent?.package_counts
-        ? Object.entries(selectedEvent.package_counts).map(([name, value]) => ({ name, value }))
-        : [];
+    // Dynamic Chart Data based on View
+    const getChartData = () => {
+        if (!selectedEvent) return [];
+
+        if (breakdownView === "package") {
+            return selectedEvent.package_counts
+                ? Object.entries(selectedEvent.package_counts).map(([name, value]) => ({ name, value }))
+                : [];
+        }
+        if (breakdownView === "discipline") {
+            return selectedEvent.discipline_counts
+                ? Object.entries(selectedEvent.discipline_counts).map(([name, value]) => ({ name, value }))
+                : [];
+        }
+        if (breakdownView === "revenue") {
+            return selectedEvent.discipline_revenue
+                ? Object.entries(selectedEvent.discipline_revenue).map(([name, value]) => ({ name, value }))
+                : [];
+        }
+        return [];
+    };
+
+    const activeChartData = getChartData().sort((a, b) => b.value - a.value); // Sort descending
+
+    const getValueFormatter = () => {
+        if (breakdownView === "revenue") return (v: number | undefined) => formatCurrency(v || 0);
+        return (v: number | undefined) => `${(v || 0).toLocaleString()}건`;
+    };
 
     // KPI Goals calculation
     const totalOrdersCount = eventAnalytics.reduce((sum, e) => sum + (e.total_orders || 0), 0);
@@ -376,36 +416,56 @@ export function AnalyticsDashboard({
                                 </div>
                             </div>
 
-                            {/* Middle: Package Distribution ("종목별 신청") */}
+                            {/* Middle: Breakdown Charts (Package / Discipline / Revenue) */}
                             <div className="bg-zinc-900/20 rounded-xl p-5 border border-zinc-800/50 relative flex flex-col">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                                        <PackageIcon className="w-3 h-3" />
-                                        Package Distribution
-                                    </h4>
-                                    {/* Chart Type Toggle */}
-                                    <div className="flex bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700">
-                                        <button
-                                            onClick={() => setPackageChartType("pie")}
-                                            className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all ${packageChartType === "pie" ? "bg-zinc-600 text-white shadow" : "text-zinc-500 hover:text-zinc-300"}`}
-                                        >
-                                            Pie
-                                        </button>
-                                        <button
-                                            onClick={() => setPackageChartType("bar")}
-                                            className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all ${packageChartType === "bar" ? "bg-zinc-600 text-white shadow" : "text-zinc-500 hover:text-zinc-300"}`}
-                                        >
-                                            Bar
-                                        </button>
+                                <div className="flex flex-col gap-4 mb-6">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                                            <PackageIcon className="w-3 h-3" />
+                                            Sales Breakdown
+                                        </h4>
+                                        {/* Chart Type Toggle */}
+                                        <div className="flex bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700">
+                                            <button
+                                                onClick={() => setChartType("pie")}
+                                                className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all ${chartType === "pie" ? "bg-zinc-600 text-white shadow" : "text-zinc-500 hover:text-zinc-300"}`}
+                                            >
+                                                Pie
+                                            </button>
+                                            <button
+                                                onClick={() => setChartType("bar")}
+                                                className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all ${chartType === "bar" ? "bg-zinc-600 text-white shadow" : "text-zinc-500 hover:text-zinc-300"}`}
+                                            >
+                                                Bar
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Breakdown View Toggle */}
+                                    <div className="flex bg-zinc-950 rounded-lg p-1 border border-zinc-800 w-full">
+                                        {(['package', 'discipline', 'revenue'] as const).map((view) => (
+                                            <button
+                                                key={view}
+                                                onClick={() => setBreakdownView(view)}
+                                                className={`flex-1 py-1.5 rounded-md text-[10px] sm:text-xs font-bold uppercase transition-all
+                                                    ${breakdownView === view ? 'bg-zinc-800 text-white shadow ring-1 ring-white/10' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                            >
+                                                {view === 'package' ? 'Package' : view === 'discipline' ? 'Discipline' : 'Revenue'}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
                                 <div className="flex-1 min-h-[250px] relative">
-                                    {packageChartData.length > 0 ? (
-                                        <PackageDistributionChart data={packageChartData} type={packageChartType} />
+                                    {activeChartData.length > 0 ? (
+                                        <GenericDistributionChart
+                                            data={activeChartData}
+                                            type={chartType}
+                                            formatter={getValueFormatter() as (v: number) => string}
+                                        />
                                     ) : (
                                         <div className="absolute inset-0 flex items-center justify-center text-zinc-600 text-xs border border-dashed border-zinc-800 rounded-lg">
-                                            No Package Data
+                                            No Data Available
                                         </div>
                                     )}
                                 </div>
@@ -440,8 +500,13 @@ export function AnalyticsDashboard({
             {/* 4. Pipeline Bottleneck & Discipline Analytics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Bottleneck Funnel */}
+                {/* Turnaround Time Analysis */}
                 <MotionCard delay={0.6} className="p-0 border-none bg-transparent" hoverEffect={false}>
-                    <BottleneckFunnelChart data={pipelineBottleneck} />
+                    {turnaroundStats ? (
+                        <TurnaroundTimeChart data={turnaroundStats} />
+                    ) : (
+                        <BottleneckFunnelChart data={pipelineBottleneck} />
+                    )}
                 </MotionCard>
 
                 {/* Discipline Analytics */}
