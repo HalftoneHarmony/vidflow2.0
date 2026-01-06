@@ -1,21 +1,25 @@
-import { getSettings } from "@/features/settings/actions";
+import { createClient } from "@/lib/supabase/server";
+import { ShowcaseGallery } from "./portfolio/ShowcaseGallery";
+import { getPortfolioItems } from "@/features/showcase/queries";
 
-/**
- * 🏠 Landing Page
- * 메인 랜딩 페이지
- */
+export const metadata = {
+    title: "VidFlow | Creative Production",
+    description: "Explore our diverse portfolio of commercial, documentary, and creative video productions.",
+};
+
 export default async function HomePage() {
-    const settings = await getSettings(["site_name"]);
-    const siteName = settings.site_name || "VidFlow";
+    const items = await getPortfolioItems();
+
+    // Get unique categories and sort them
+    const rawCategories = items?.map((item) => item.category || "General") || [];
+    const categories = ["All", ...Array.from(new Set(rawCategories)).sort()];
 
     return (
-        <div className="container mx-auto px-4 py-16">
-            <h1 className="text-5xl font-bold text-center mb-8">
-                <span className="text-red-500">{siteName}</span> Manager
-            </h1>
-            <p className="text-xl text-zinc-400 text-center max-w-2xl mx-auto">
-                보디빌딩 대회 영상 프로덕션의 전 과정을 관통하는 통합 비즈니스 엔진
-            </p>
-        </div>
+        <main className="min-h-screen bg-black text-white selection:bg-white/20">
+
+
+            {/* Gallery Section */}
+            <ShowcaseGallery items={items || []} categories={categories} />
+        </main>
     );
 }

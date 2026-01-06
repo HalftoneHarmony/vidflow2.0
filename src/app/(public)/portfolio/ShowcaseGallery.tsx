@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, X, ExternalLink, Maximize2 } from "lucide-react";
-import Image from "next/image"; // Note: Might need unoptimized if external domains strictly blocked, but usually okay.
+import { Play, X, ArrowUpRight, Maximize2 } from "lucide-react";
 
 interface ShowcaseItem {
     id: number;
@@ -24,89 +23,128 @@ interface Props {
 export function ShowcaseGallery({ items, categories }: Props) {
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [selectedVideo, setSelectedVideo] = useState<ShowcaseItem | null>(null);
+    const [hoveredId, setHoveredId] = useState<number | null>(null);
 
-    const filteredItems = selectedCategory === "All"
-        ? items
-        : items.filter(item => item.category === selectedCategory);
+    // Filter items
+    const filteredItems = useMemo(() => {
+        return selectedCategory === "All"
+            ? items
+            : items.filter((item) => item.category === selectedCategory);
+    }, [items, selectedCategory]);
 
-    // Helper to extract embed URL
+    // Calculate grid classes for "Bento" / Masonry feel
+    // We'll use a deterministic pattern based on index to create visual variety
+    const getGridClass = (index: number) => {
+        // Pattern: Big, Small, Small, Wide, Small, Small...
+        const patternIndex = index % 10;
+        switch (patternIndex) {
+            case 0: return "md:col-span-2 md:row-span-2"; // Big Feature
+            case 3: return "md:col-span-2"; // Wide
+            case 6: return "md:row-span-2"; // Tall (if image supports, otherwise just big) -> actually for 16:9 video, row-span-2 might crop too much. Let's stick to col-spans mostly or 2x2.
+            case 7: return "md:col-span-2 md:row-span-2";
+            default: return "md:col-span-1 md:row-span-1";
+        }
+    };
+
     const getEmbedUrl = (url: string) => {
+        if (!url) return "";
         if (url.includes("youtube.com") || url.includes("youtu.be")) {
             const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-            return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : url;
+            return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1&modestbranding=1&rel=0` : url;
         }
         if (url.includes("vimeo.com")) {
             const match = url.match(/vimeo\.com\/(\d+)/);
             return match ? `https://player.vimeo.com/video/${match[1]}?autoplay=1` : url;
         }
-        return url; // Fallback for direct links or other players
+        return url;
     };
 
     return (
-        <div className="space-y-12">
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap justify-center gap-2">
-                {categories.map((category) => (
-                    <button
-                        key={category}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${selectedCategory === category
-                            ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105"
-                            : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-zinc-800"
-                            }`}
-                    >
-                        {category}
-                    </button>
-                ))}
+        <div className="min-h-screen bg-black">
+            {/* Sticky Header / Filter - Minimalist floating */}
+            <div className="sticky top-0 z-40 w-full px-6 py-4 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none">
+                <div className="flex items-center justify-between pointer-events-auto">
+                    <h1 className="text-xl font-bold tracking-tighter text-white mix-blend-difference hidden md:block">
+                        VIDFLOW<span className="text-zinc-500">.GALLERY</span>
+                    </h1>
+
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide bg-black/50 backdrop-blur-md rounded-full p-1 border border-white/10">
+                        {categories.map((category) => (
+                            <button
+                                key={category}
+                                onClick={() => setSelectedCategory(category)}
+                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === category
+                                    ? "bg-white text-black shadow-lg"
+                                    : "text-zinc-400 hover:text-white hover:bg-white/10"
+                                    }`}
+                            >
+                                {category}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
 
-            {/* Gallery Grid */}
+            {/* The Wall - Dense Grid */}
             <motion.div
                 layout
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-1 p-1 md:p-2 auto-rows-[200px] md:auto-rows-[250px]"
             >
                 <AnimatePresence mode="popLayout">
-                    {filteredItems.map((item) => (
+                    {filteredItems.map((item, index) => (
                         <motion.div
                             key={item.id}
                             layout
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            transition={{ duration: 0.3 }}
-                            className="group relative aspect-video bg-zinc-900 rounded-xl overflow-hidden cursor-pointer border border-zinc-800 hover:border-zinc-600 transition-colors"
+                            transition={{ duration: 0.4, delay: index * 0.05 }}
+                            className={`relative group bg-zinc-900 overflow-hidden cursor-pointer ${getGridClass(index)}`}
+                            onMouseEnter={() => setHoveredId(item.id)}
+                            onMouseLeave={() => setHoveredId(null)}
                             onClick={() => setSelectedVideo(item)}
                         >
-                            {/* Thumbnail */}
+                            {/* Image */}
                             {item.thumbnail_url ? (
-                                <div className="relative w-full h-full">
-                                    <img // Using img for simplicity with external URLs without config
-                                        src={item.thumbnail_url}
-                                        alt={item.title}
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                    />
-                                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300" />
-                                </div>
+                                <motion.img
+                                    src={item.thumbnail_url}
+                                    alt={item.title}
+                                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110 opacity-80 group-hover:opacity-100"
+                                />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-zinc-800 group-hover:bg-zinc-700 transition-colors">
-                                    <Play className="w-12 h-12 text-zinc-600" />
+                                <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                                    <div className="text-zinc-700 font-bold uppercase tracking-widest text-center px-4">
+                                        {item.title}
+                                    </div>
                                 </div>
                             )}
 
-                            {/* Overlay Content */}
-                            <div className="absolute inset-0 flex flex-col justify-end p-6 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
-                                <div className="transform md:translate-y-4 md:group-hover:translate-y-0 transition-transform duration-300">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-zinc-400 tracking-wider uppercase">{item.category}</span>
-                                        <Play className="w-8 h-8 text-white fill-white opacity-80" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-white mb-1 line-clamp-1">{item.title}</h3>
+                            {/* Dark Gradient Overlay - Always present slightly, stronger on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+
+                            {/* Hover Info */}
+                            <div className="absolute inset-0 p-6 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <motion.div
+                                    initial={{ y: 20 }}
+                                    animate={hoveredId === item.id ? { y: 0 } : { y: 20 }}
+                                    className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300"
+                                >
+                                    <span className="inline-block px-2 py-1 mb-2 text-[10px] font-bold uppercase tracking-widest bg-white text-black">
+                                        {item.category}
+                                    </span>
+                                    <h3 className="text-lg md:text-2xl font-black text-white leading-tight drop-shadow-md">
+                                        {item.title}
+                                    </h3>
                                     {item.client_name && (
-                                        <p className="text-sm text-zinc-400 mb-2">{item.client_name}</p>
+                                        <p className="text-zinc-300 text-xs font-mono mt-1">{item.client_name}</p>
                                     )}
-                                    {item.description && (
-                                        <p className="text-sm text-zinc-300 line-clamp-2 hidden md:block">{item.description}</p>
-                                    )}
+                                </motion.div>
+                            </div>
+
+                            {/* Center Play Icon - shows on hover */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+                                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                                    <Play className="w-6 h-6 text-white fill-white" />
                                 </div>
                             </div>
                         </motion.div>
@@ -114,42 +152,33 @@ export function ShowcaseGallery({ items, categories }: Props) {
                 </AnimatePresence>
             </motion.div>
 
+            {/* Footer area check */}
             {filteredItems.length === 0 && (
-                <div className="text-center py-20 text-zinc-500">
-                    <p>No works found in this category yet.</p>
+                <div className="h-[50vh] flex items-center justify-center text-zinc-500">
+                    <p>No works found.</p>
                 </div>
             )}
 
-            {/* Video Modal */}
+            {/* Video Modal - Full Screen Immersive */}
             <AnimatePresence>
                 {selectedVideo && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 md:p-8"
-                        onClick={() => setSelectedVideo(null)}
+                        className="fixed inset-0 z-[100] bg-black"
                     >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            className="relative w-full max-w-6xl bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-zinc-800"
-                            onClick={(e) => e.stopPropagation()}
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setSelectedVideo(null)}
+                            className="absolute top-6 right-6 z-50 p-4 group"
                         >
-                            {/* Header */}
-                            <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-10 pointer-events-none">
-                                <div />
-                                <button
-                                    onClick={() => setSelectedVideo(null)}
-                                    className="pointer-events-auto p-2 bg-black/50 rounded-full text-white hover:bg-white hover:text-black transition-colors"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
+                            <X className="w-8 h-8 text-zinc-500 group-hover:text-white transition-colors" />
+                        </button>
 
-                            {/* Video Player Embed */}
-                            <div className="relative aspect-video bg-black">
+                        <div className="w-full h-full flex flex-col md:flex-row">
+                            {/* Main Video Area */}
+                            <div className="flex-1 h-[50vh] md:h-full bg-black relative flex items-center justify-center">
                                 <iframe
                                     src={getEmbedUrl(selectedVideo.video_url)}
                                     className="absolute inset-0 w-full h-full"
@@ -158,43 +187,46 @@ export function ShowcaseGallery({ items, categories }: Props) {
                                 />
                             </div>
 
-                            {/* Info Section */}
-                            <div className="p-6 md:p-8 bg-zinc-900">
-                                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className="px-3 py-1 bg-zinc-800 text-zinc-300 rounded-full text-xs font-semibold uppercase">{selectedVideo.category}</span>
-                                            {selectedVideo.client_name && (
-                                                <span className="text-zinc-500 text-sm">Client: {selectedVideo.client_name}</span>
-                                            )}
+                            {/* Sidebar Info (Bottom on mobile, Right on desktop) */}
+                            <div className="md:w-[400px] h-[50vh] md:h-full bg-zinc-950 border-l border-zinc-900 p-8 md:p-12 flex flex-col justify-center overflow-y-auto">
+                                <div className="space-y-8">
+                                    <div>
+                                        <span className="text-red-500 font-mono text-xs uppercase tracking-widest mb-2 block">
+                                            Selected Work
+                                        </span>
+                                        <h2 className="text-3xl md:text-4xl font-black text-white leading-none">
+                                            {selectedVideo.title}
+                                        </h2>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="border-t border-zinc-800 pt-4">
+                                            <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">Client</p>
+                                            <p className="text-white">{selectedVideo.client_name || "Internal Production"}</p>
                                         </div>
-                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">{selectedVideo.title}</h2>
-                                        <p className="text-zinc-400 leading-relaxed max-w-3xl">{selectedVideo.description}</p>
-
-                                        {selectedVideo.tags && selectedVideo.tags.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mt-6">
-                                                {selectedVideo.tags.map(tag => (
-                                                    <span key={tag} className="text-xs text-zinc-500">#{tag}</span>
-                                                ))}
-                                            </div>
-                                        )}
+                                        <div className="border-t border-zinc-800 pt-4">
+                                            <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">Category</p>
+                                            <p className="text-white">{selectedVideo.category}</p>
+                                        </div>
                                     </div>
 
-                                    {/* Actions / Links */}
-                                    <div className="flex gap-4">
-                                        <a
-                                            href={selectedVideo.video_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-lg font-bold hover:bg-zinc-200 transition-colors"
-                                        >
-                                            <ExternalLink className="w-4 h-4" />
-                                            Watch on Site
-                                        </a>
-                                    </div>
+                                    {selectedVideo.description && (
+                                        <p className="text-zinc-400 leading-relaxed text-sm md:text-base border-t border-zinc-800 pt-4">
+                                            {selectedVideo.description}
+                                        </p>
+                                    )}
+
+                                    <a
+                                        href={selectedVideo.video_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 text-white hover:text-red-500 transition-colors font-bold uppercase tracking-wider text-sm mt-8"
+                                    >
+                                        Open Original <ArrowUpRight className="w-4 h-4" />
+                                    </a>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
