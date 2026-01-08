@@ -5,12 +5,15 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Calendar, MapPin, Film } from "lucide-react";
 import { Event } from "@/features/showcase/queries";
+import { useTranslations, useLocale } from "next-intl";
 
 type EventListProps = {
     initialEvents: Event[];
 };
 
 export function EventList({ initialEvents }: EventListProps) {
+    const t = useTranslations("EventList");
+    const locale = useLocale();
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState<"ALL" | "LIVE" | "ENDED">("ALL");
 
@@ -27,7 +30,7 @@ export function EventList({ initialEvents }: EventListProps) {
     });
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("ko-KR", {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: "numeric",
             month: "long",
             day: "numeric",
@@ -45,7 +48,7 @@ export function EventList({ initialEvents }: EventListProps) {
                     </div>
                     <input
                         type="text"
-                        placeholder="대회명 또는 장소 검색..."
+                        placeholder={t("search_placeholder")}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
@@ -57,11 +60,11 @@ export function EventList({ initialEvents }: EventListProps) {
                             key={status}
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${filterStatus === status
-                                    ? "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"
-                                    : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                ? "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                                : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white"
                                 }`}
                         >
-                            {status === "ALL" ? "전체" : status === "LIVE" ? "진행중" : "종료됨"}
+                            {status === "ALL" ? t("filter_all") : status === "LIVE" ? t("filter_live") : t("filter_ended")}
                         </button>
                     ))}
                 </div>
@@ -77,10 +80,10 @@ export function EventList({ initialEvents }: EventListProps) {
                     >
                         <div className="text-6xl mb-4">🎪</div>
                         <h2 className="text-xl font-bold text-zinc-400 mb-2">
-                            검색 결과가 없습니다
+                            {t("empty_title")}
                         </h2>
                         <p className="text-zinc-600">
-                            다른 키워드로 검색해보세요.
+                            {t("empty_desc")}
                         </p>
                     </motion.div>
                 ) : (
@@ -102,8 +105,8 @@ export function EventList({ initialEvents }: EventListProps) {
                                     <Link
                                         href={`/events/${event.id}`}
                                         className={`group block h-full bg-zinc-900 border transition-all duration-300 overflow-hidden rounded-lg relative ${event.is_active
-                                                ? "border-zinc-800 hover:border-red-600 hover:shadow-[0_0_20px_rgba(220,38,38,0.2)]"
-                                                : "border-zinc-800/50 hover:border-zinc-700 opacity-70 hover:opacity-100 grayscale hover:grayscale-0"
+                                            ? "border-zinc-800 hover:border-red-600 hover:shadow-[0_0_20px_rgba(220,38,38,0.2)]"
+                                            : "border-zinc-800/50 hover:border-zinc-700 opacity-70 hover:opacity-100 grayscale hover:grayscale-0"
                                             }`}
                                     >
                                         {/* Thumbnail */}
@@ -125,11 +128,11 @@ export function EventList({ initialEvents }: EventListProps) {
                                                 {event.is_active ? (
                                                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 text-white text-xs font-black uppercase tracking-wider rounded-sm shadow-lg">
                                                         <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                                                        LIVE
+                                                        {t("status_live")}
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-bold uppercase tracking-wider rounded-sm">
-                                                        ENDED
+                                                        {t("status_ended")}
                                                     </span>
                                                 )}
                                             </div>
@@ -161,7 +164,7 @@ export function EventList({ initialEvents }: EventListProps) {
                                             <div className="mt-5 pt-4 border-t border-zinc-800 flex justify-between items-center text-sm">
                                                 <span className={`font-bold transition-colors ${event.is_active ? "text-red-500 group-hover:text-red-400" : "text-zinc-600"
                                                     }`}>
-                                                    {event.is_active ? "패키지 보기" : "판매 종료"}
+                                                    {event.is_active ? t("cta_view_package") : t("cta_ended")}
                                                 </span>
                                                 <span className="transform group-hover:translate-x-1 transition-transform duration-300 text-zinc-500 group-hover:text-white">
                                                     →

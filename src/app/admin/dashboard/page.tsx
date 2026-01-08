@@ -190,15 +190,14 @@ export default async function DashboardPage() {
 
     // Pipeline Stats (fallback to local calculation if DB function fails)
     const stats = comprehensiveStats?.pipeline || {
-        waiting: pipelineCards.filter(c => String(c.stage) === "WAITING").length,
-        shooting: pipelineCards.filter(c => String(c.stage) === "SHOOTING").length,
+        waiting: pipelineCards.filter(c => String(c.stage) === "WAITING" || String(c.stage) === "SHOOTING").length,
         editing: pipelineCards.filter(c => String(c.stage) === "EDITING").length,
         ready: pipelineCards.filter(c => String(c.stage) === "READY").length,
         delivered: pipelineCards.filter(c => String(c.stage) === "DELIVERED").length,
-        unassigned: pipelineCards.filter(c => (String(c.stage) === "EDITING" || String(c.stage) === "SHOOTING") && !c.assignee_id).length,
+        unassigned: pipelineCards.filter(c => (String(c.stage) === "EDITING") && !c.assignee_id).length,
     };
 
-    const totalActive = stats.shooting + stats.editing + stats.ready;
+    const totalActive = stats.editing + stats.ready;
     const totalProductions = pipelineCards.length;
     const unassignedCount = stats.unassigned;
 
@@ -254,7 +253,7 @@ export default async function DashboardPage() {
                         <OperationalStatCard
                             label="Active Productions"
                             value={totalActive}
-                            subValue="In Progress (Shoot/Edit/Review)"
+                            subValue="In Progress (Edit/Review)"
                             color="blue"
                             icon={<div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />}
                         />
@@ -270,9 +269,9 @@ export default async function DashboardPage() {
                     </AnimatedStatCard>
                     <AnimatedStatCard>
                         <OperationalStatCard
-                            label="Upcoming Shoots"
-                            value={upcomingEvents.length}
-                            subValue="Scheduled Events"
+                            label="Waiting (Pre-Prod)"
+                            value={stats.waiting}
+                            subValue="Awaiting Assignment"
                             color="amber"
                         />
                     </AnimatedStatCard>
@@ -328,12 +327,6 @@ export default async function DashboardPage() {
                                 count={stats.waiting}
                                 total={pipelineCards.length}
                                 color="bg-zinc-600"
-                            />
-                            <StageProgressBar
-                                stage="Shooting"
-                                count={stats.shooting}
-                                total={pipelineCards.length}
-                                color="bg-amber-500"
                             />
                             <StageProgressBar
                                 stage="Editing"

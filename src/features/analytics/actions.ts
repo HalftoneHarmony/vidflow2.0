@@ -10,7 +10,7 @@ export type DashboardStats = {
     today: { orders: number; revenue: number };
     this_month: { orders: number; revenue: number; new_users: number };
     all_time: { total_revenue: number; total_orders: number; total_customers: number; avg_order_value: number };
-    pipeline: { waiting: number; shooting: number; editing: number; ready: number; delivered: number; unassigned: number };
+    pipeline: { waiting: number; editing: number; ready: number; delivered: number; unassigned: number };
     active_events: number;
     pending_contacts: number;
 };
@@ -26,7 +26,15 @@ export async function getComprehensiveStats(): Promise<DashboardStats | null> {
         return null;
     }
 
-    return data as DashboardStats;
+    const stats = data as any;
+    if (stats && stats.pipeline) {
+        // Merge SHOOTING into WAITING for legacy support
+        const shootingCount = stats.pipeline.shooting || 0;
+        stats.pipeline.waiting = (stats.pipeline.waiting || 0) + shootingCount;
+        delete stats.pipeline.shooting;
+    }
+
+    return stats as DashboardStats;
 }
 
 // 빠른 통계 조회
@@ -268,8 +276,11 @@ export async function getPipelineBottleneck() {
         if (score >= 70) level = "HIGH";
         else if (score >= 30) level = "MEDIUM";
 
+        // Map SHOOTING to WAITING
+        const stage = row.stage === "SHOOTING" ? "WAITING" : row.stage;
+
         return {
-            status: row.stage, // DB의 'stage'를 'status'로 매핑
+            status: stage, // DB의 'stage'를 'status'로 매핑
             task_count: count,
             avg_days_in_status: avgDays,
             bottleneck_score: score,

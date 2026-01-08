@@ -34,7 +34,7 @@ export function TurnaroundTimeChart({ data }: { data: TurnaroundStat[] }) {
                         <h3 className="text-lg font-bold text-white font-[family-name:var(--font-oswald)] uppercase tracking-wide">
                             Turnaround Time
                         </h3>
-                        <p className="text-xs text-zinc-500">대회별 평균 작업 소요 시간 (촬영일 기준)</p>
+                        <p className="text-xs text-zinc-500">대회별 평균 작업 소요 시간 (대회일 기준)</p>
                     </div>
                 </div>
             </div>
@@ -47,7 +47,7 @@ export function TurnaroundTimeChart({ data }: { data: TurnaroundStat[] }) {
                             전체 평균 소요 시간
                             <AlertCircle className="w-3 h-3 text-violet-400 opacity-50" />
                         </p>
-                        <p className="text-xs text-zinc-400">촬영일로부터 편집 완료까지</p>
+                        <p className="text-xs text-zinc-400">대회일로부터 편집 완료까지</p>
                     </div>
                     <div className="text-right relative z-10">
                         <p className="text-3xl font-black text-white font-mono tracking-tight">

@@ -52,18 +52,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; gradient: st
         gradient: "from-amber-500/20 to-amber-600/10",
         icon: Clock
     },
-    shooting: {
-        label: "촬영",
-        color: "#3b82f6",
-        gradient: "from-blue-500/20 to-blue-600/10",
-        icon: Zap
-    },
-    SHOOTING: {
-        label: "촬영",
-        color: "#3b82f6",
-        gradient: "from-blue-500/20 to-blue-600/10",
-        icon: Zap
-    },
     editing: {
         label: "편집",
         color: "#8b5cf6",
@@ -182,7 +170,7 @@ export function BottleneckFunnelChart({ data }: Props) {
 
     // Sort by pipeline order for funnel visualization
     const orderedData = [...processedData].sort((a, b) => {
-        const order = ['waiting', 'shooting', 'editing', 'ready', 'delivered'];
+        const order = ['waiting', 'editing', 'ready', 'delivered'];
         return order.indexOf(a.status.toLowerCase()) - order.indexOf(b.status.toLowerCase());
     });
 

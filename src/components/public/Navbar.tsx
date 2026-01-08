@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link } from "@/i18n/routing";
+import { usePathname } from "@/i18n/routing";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Menu, LogOut, X, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/features/auth/actions";
 import { User } from "@supabase/supabase-js";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 interface NavbarProps {
     user: User | null;
@@ -16,19 +18,19 @@ interface NavbarProps {
     siteLogo: string;
 }
 
-const navItems = [
-    { href: "/showcase", label: "Showcase", highlight: true },
-    { href: "/portfolio", label: "Portfolio" },
-    { href: "/about", label: "About" },
-    { href: "/events", label: "Events" },
-    { href: "/support", label: "Support" },
-];
-
 export function Navbar({ user, siteName, siteLogo }: NavbarProps) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const pathname = usePathname();
     const { scrollY } = useScroll();
+    const t = useTranslations("Navigation");
+
+    const navItems = [
+        { href: "/", label: t('portfolio'), highlight: true },
+        { href: "/competition", label: t('competition') },
+        { href: "/about", label: t('about') },
+        { href: "/support", label: t('support') },
+    ];
 
     useEffect(() => {
         const handleScroll = () => {
@@ -96,7 +98,7 @@ export function Navbar({ user, siteName, siteLogo }: NavbarProps) {
                                     "text-sm font-bold uppercase tracking-[0.15em] transition-colors duration-300",
                                     pathname === "/my-page" ? "text-red-500" : "text-zinc-400 group-hover:text-white"
                                 )}>
-                                    My Page
+                                    {t('my_page')}
                                 </span>
                                 <span className={cn(
                                     "absolute bottom-0 left-0 w-full h-[2px] bg-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-right group-hover:origin-left",
@@ -108,6 +110,8 @@ export function Navbar({ user, siteName, siteLogo }: NavbarProps) {
 
                     {/* Desktop Actions */}
                     <div className="hidden md:flex items-center gap-6">
+                        <LanguageSwitcher />
+
                         {user ? (
                             <div className="flex items-center gap-4">
                                 <span className="text-xs text-zinc-500 font-mono tracking-widest uppercase">
@@ -116,7 +120,7 @@ export function Navbar({ user, siteName, siteLogo }: NavbarProps) {
                                 <form action={signOut}>
                                     <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-red-500 hover:bg-zinc-900 uppercase tracking-wider text-xs font-bold">
                                         <LogOut className="w-4 h-4 mr-2" />
-                                        Exit
+                                        {t('exit')}
                                     </Button>
                                 </form>
                             </div>
@@ -126,14 +130,14 @@ export function Navbar({ user, siteName, siteLogo }: NavbarProps) {
                                     href="/login"
                                     className="text-sm font-bold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
                                 >
-                                    Login
+                                    {t('login')}
                                 </Link>
                                 <Link href="/join">
                                     <Button
                                         size="sm"
                                         className="bg-red-600 hover:bg-red-700 text-white border-0 font-bold uppercase tracking-widest px-6 shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:shadow-[0_0_30px_rgba(220,38,38,0.5)] transition-all"
                                     >
-                                        Join Us
+                                        {t('join')}
                                     </Button>
                                 </Link>
                             </div>
@@ -187,7 +191,7 @@ export function Navbar({ user, siteName, siteLogo }: NavbarProps) {
                                             onClick={() => setIsMobileMenuOpen(false)}
                                             className="text-4xl font-black uppercase tracking-tight text-white hover:text-red-600 transition-colors"
                                         >
-                                            My Page
+                                            {t('my_page')}
                                         </Link>
                                     </motion.div>
                                 )}
@@ -202,19 +206,19 @@ export function Navbar({ user, siteName, siteLogo }: NavbarProps) {
                                 {user ? (
                                     <form action={signOut}>
                                         <Button variant="outline" className="w-full justify-center text-lg h-12 border-zinc-800 text-zinc-400 hover:text-red-500 hover:border-red-500 uppercase tracking-widest font-bold bg-transparent">
-                                            Log Out
+                                            {t('logout')}
                                         </Button>
                                     </form>
                                 ) : (
                                     <div className="grid grid-cols-2 gap-4">
                                         <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
                                             <Button variant="outline" className="w-full text-lg h-12 border-zinc-800 text-white hover:bg-zinc-900 uppercase tracking-widest font-bold bg-transparent">
-                                                Login
+                                                {t('login')}
                                             </Button>
                                         </Link>
                                         <Link href="/join" onClick={() => setIsMobileMenuOpen(false)}>
                                             <Button className="w-full text-lg h-12 bg-red-600 hover:bg-red-700 text-white border-0 uppercase tracking-widest font-bold">
-                                                Join
+                                                {t('join')}
                                             </Button>
                                         </Link>
                                     </div>

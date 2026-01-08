@@ -266,7 +266,7 @@ export async function verifyAndCreateOrder(
 export type OrderStatus = {
     orderId: number;
     status: "PENDING" | "PAID" | "REFUNDED";
-    stage: "WAITING" | "SHOOTING" | "EDITING" | "READY" | "DELIVERED";
+    stage: "WAITING" | "EDITING" | "READY" | "DELIVERED";
     createdAt: string;
 };
 

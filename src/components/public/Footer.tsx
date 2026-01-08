@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MoveRight, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 interface FooterProps {
     siteName: string;
@@ -21,13 +22,19 @@ interface FooterProps {
 export function Footer({
     siteName,
     siteLogo,
-    footerDesc = "The definitive platform for bodybuilding cinematography. Built for impact. Designed for domination.",
-    newsletterTitle = "Stay Updated",
-    newsletterText = "Join the elite circle. Get updates on new features and exclusive events.",
+    footerDesc,
+    newsletterTitle,
+    newsletterText,
     socials
 }: FooterProps) {
+    const t = useTranslations("Footer");
+    const tNav = useTranslations("Navigation");
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
+
+    const description = footerDesc || t("default_desc");
+    const newsTitle = newsletterTitle || t("default_newsletter_title");
+    const newsText = newsletterText || t("default_newsletter_text");
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,7 +64,7 @@ export function Footer({
                             </span>
                         </Link>
                         <p className="text-zinc-500 max-w-sm mb-8 leading-relaxed font-light text-lg">
-                            {footerDesc}
+                            {description}
                         </p>
 
                         <div className="flex gap-4">
@@ -82,16 +89,16 @@ export function Footer({
                     {/* Links Columns */}
                     <div className="md:col-span-3">
                         <h4 className="text-white font-black uppercase tracking-widest text-sm mb-8 text-red-600">
-                            Platform
+                            {t("platform")}
                         </h4>
                         <ul className="space-y-4">
                             {[
-                                { label: 'Showcase', href: '/showcase' },
-                                { label: 'Events', href: '/events' },
-                                { label: 'About Us', href: '/about' },
-                                { label: 'Contact', href: '/support' }
+                                { label: tNav('portfolio'), href: '/' },
+                                { label: tNav('competition'), href: '/competition' },
+                                { label: tNav('about'), href: '/about' },
+                                { label: tNav('support'), href: '/support' }
                             ].map((item) => (
-                                <li key={item.label}>
+                                <li key={item.href}>
                                     <Link href={item.href} className="text-zinc-500 hover:text-white transition-colors uppercase tracking-wider text-sm font-medium flex items-center gap-2 group">
                                         <span className="w-0 group-hover:w-2 h-[1px] bg-red-600 transition-all duration-300" />
                                         {item.label}
@@ -104,10 +111,10 @@ export function Footer({
                     {/* Newsletter Column */}
                     <div className="md:col-span-4">
                         <h4 className="text-white font-black uppercase tracking-widest text-sm mb-8 text-red-600">
-                            {newsletterTitle}
+                            {newsTitle}
                         </h4>
                         <p className="text-zinc-500 text-sm mb-6">
-                            {newsletterText}
+                            {newsText}
                         </p>
 
                         <form onSubmit={handleSubmit} className="relative">
@@ -115,7 +122,7 @@ export function Footer({
                                 <input
                                     type="email"
                                     required
-                                    placeholder="ENTER YOUR EMAIL"
+                                    placeholder={t("placeholder_email")}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     disabled={status === "success"}
@@ -139,7 +146,7 @@ export function Footer({
                                     animate={{ opacity: 1, y: 0 }}
                                     className="absolute -bottom-8 left-0 text-green-500 text-xs font-bold uppercase tracking-widest flex items-center gap-2"
                                 >
-                                    <CheckCircle2 className="w-3 h-3" /> Successfully Subscribed
+                                    <CheckCircle2 className="w-3 h-3" /> {t("msg_subscribed")}
                                 </motion.p>
                             )}
                         </form>
@@ -149,14 +156,14 @@ export function Footer({
                 {/* Footer Bottom */}
                 <div className="border-t border-zinc-900 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-zinc-600 text-[10px] uppercase tracking-[0.2em]">
-                        © {new Date().getFullYear()} {siteName}. All Rights Reserved.
+                        © {new Date().getFullYear()} {siteName}. {t("rights")}
                     </p>
                     <div className="flex items-center gap-6">
                         <Link href="/privacy" className="text-zinc-600 hover:text-white text-[10px] uppercase tracking-[0.2em] transition-colors">
-                            Privacy Policy
+                            {t("link_privacy")}
                         </Link>
                         <Link href="/terms" className="text-zinc-600 hover:text-white text-[10px] uppercase tracking-[0.2em] transition-colors">
-                            Terms of Service
+                            {t("link_terms")}
                         </Link>
                     </div>
                 </div>

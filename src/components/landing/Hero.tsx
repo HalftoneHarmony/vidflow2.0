@@ -99,7 +99,7 @@ export function Hero() {
                     className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-12"
                 >
                     <Magnetic>
-                        <Link href="/showcase">
+                        <Link href="/">
                             <Button size="xl" className="w-full sm:w-auto h-16 px-10 text-lg font-black tracking-widest bg-red-600 hover:bg-red-500 border-none shadow-[0_0_30px_rgba(220,38,38,0.4)] hover:shadow-[0_0_50px_rgba(220,38,38,0.6)] rounded-none skew-x-[-10deg] hover:skew-x-0 transition-all">
                                 <span className="skew-x-[10deg] group-hover:skew-x-0 inline-block">ENTER SHOWCASE</span>
                             </Button>

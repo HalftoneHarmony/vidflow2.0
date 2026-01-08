@@ -7,8 +7,9 @@ import { signup } from "../actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, Check, X, Eye, EyeOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+function SubmitButton({ disabled, label, pendingLabel }: { disabled: boolean; label: string; pendingLabel: string }) {
     const { pending } = useFormStatus();
 
     return (
@@ -21,10 +22,10 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
             {pending ? (
                 <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Creating...
+                    {pendingLabel}
                 </>
             ) : (
-                "Create Account"
+                label
             )}
         </Button>
     );
@@ -36,6 +37,7 @@ export function SignUpForm() {
     const [confirm, setConfirm] = useState("");
     const [agreed, setAgreed] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const t = useTranslations("Auth");
 
     // Password Validation
     const isMatch = password && confirm && password === confirm;
@@ -46,16 +48,16 @@ export function SignUpForm() {
     // Password Strength Calc
     const strengthScore = [isLength, isSecure, /[!@#$%^&*]/.test(password)].filter(Boolean).length;
     const strengthColor = ["bg-zinc-800", "bg-red-500", "bg-amber-500", "bg-green-500"][strengthScore] || "bg-zinc-800";
-    const strengthLabel = ["Weak", "Weak", "Medium", "Strong"][strengthScore] || "None";
+    // const strengthLabel = ["Weak", "Weak", "Medium", "Strong"][strengthScore] || "None"; // unused
 
     return (
         <div className="space-y-6">
             <div className="space-y-2 text-center lg:text-left">
                 <h2 className="text-3xl font-bold font-[family-name:var(--font-oswald)] uppercase tracking-wide text-white">
-                    Join the Corps
+                    {t('join_title')}
                 </h2>
                 <p className="text-zinc-500 font-light">
-                    Start your journey with VidFlow.
+                    {t('slogan_1')}
                 </p>
             </div>
 
@@ -78,7 +80,7 @@ export function SignUpForm() {
                 <form action={formAction} className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="name">
-                            Full Name
+                            {t('label_name')}
                         </label>
                         <Input
                             id="name"
@@ -92,7 +94,7 @@ export function SignUpForm() {
 
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="email">
-                            Email Address
+                            {t('label_email')}
                         </label>
                         <Input
                             id="email"
@@ -106,7 +108,7 @@ export function SignUpForm() {
 
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="instagramId">
-                            Instagram ID <span className="text-zinc-600 font-normal lowercase">(optional)</span>
+                            {t('label_instagram')}
                         </label>
                         <Input
                             id="instagramId"
@@ -120,14 +122,14 @@ export function SignUpForm() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="password">
-                                Password
+                                {t('label_password')}
                             </label>
                             <div className="relative">
                                 <Input
                                     id="password"
                                     name="password"
                                     type={showPassword ? "text" : "password"}
-                                    placeholder="Min 8 chars, Aa1"
+                                    placeholder={t('placeholder_password_rules')}
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -156,14 +158,14 @@ export function SignUpForm() {
 
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="passwordConfirm">
-                                Confirm
+                                {t('label_confirm_password')}
                             </label>
                             <div className="relative">
                                 <Input
                                     id="passwordConfirm"
                                     name="passwordConfirm"
                                     type="password"
-                                    placeholder="Repeat password"
+                                    placeholder={t('placeholder_confirm_password')}
                                     required
                                     value={confirm}
                                     onChange={(e) => setConfirm(e.target.value)}
@@ -182,15 +184,15 @@ export function SignUpForm() {
                     <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
                         <span className={`flex items-center gap-1 transition-colors ${isLength ? "text-green-500" : "text-zinc-600"}`}>
                             {isLength ? <Check className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-zinc-600"></div>}
-                            8+ Chars
+                            {t('helper_chars')}
                         </span>
                         <span className={`flex items-center gap-1 transition-colors ${isSecure ? "text-green-500" : "text-zinc-600"}`}>
                             {isSecure ? <Check className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-zinc-600"></div>}
-                            Mix (Aa1)
+                            {t('helper_mix')}
                         </span>
                         <span className={`flex items-center gap-1 transition-colors ${isMatch && confirm ? "text-green-500" : "text-zinc-600"}`}>
                             {isMatch && confirm ? <Check className="w-3 h-3" /> : <div className="w-3 h-3 rounded-full border border-zinc-600"></div>}
-                            Match
+                            {t('helper_match')}
                         </span>
                     </div>
 
@@ -207,7 +209,7 @@ export function SignUpForm() {
                             />
                         </div>
                         <label htmlFor="terms" className="text-sm text-zinc-400 select-none cursor-pointer">
-                            I agree to the <span className="text-white hover:underline">Terms of Service</span> and <span className="text-white hover:underline">Privacy Policy</span>.
+                            {t('agree_terms')}
                         </label>
                     </div>
 
@@ -221,16 +223,16 @@ export function SignUpForm() {
                     )}
 
                     <div className="pt-4">
-                        <SubmitButton disabled={!isValid} />
+                        <SubmitButton disabled={!isValid} label={t('btn_join')} pendingLabel="Creating..." />
                     </div>
                 </form>
             )}
 
             <div className="text-center">
                 <p className="text-zinc-500 text-sm">
-                    Already have an account?{" "}
+                    {t('link_have_account')}{" "}
                     <Link href="/login" className="text-white hover:text-red-500 font-bold transition-colors uppercase tracking-wider">
-                        Login
+                        {t('btn_login')}
                     </Link>
                 </p>
             </div>

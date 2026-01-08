@@ -4,12 +4,14 @@ import { useState } from "react";
 import { PackageWithShowcase, ShowcaseItem } from "../queries";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 type ShowcaseDetailClientProps = {
     packageData: PackageWithShowcase;
 };
 
 export function ShowcaseDetailClient({ packageData }: ShowcaseDetailClientProps) {
+    const t = useTranslations("Competition");
     // Find videos and images separately
     const videos = packageData.showcase_items.filter(item => item.type === "VIDEO");
     const images = packageData.showcase_items.filter(item => item.type === "IMAGE");
@@ -35,13 +37,13 @@ export function ShowcaseDetailClient({ packageData }: ShowcaseDetailClientProps)
             {/* Back Button */}
             <div className="absolute top-8 left-8 z-50">
                 <Link
-                    href="/showcase"
+                    href="/competition"
                     className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"
                 >
                     <svg className="w-6 h-6 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    <span className="font-bold uppercase tracking-widest text-sm">Back to Gallery</span>
+                    <span className="font-bold uppercase tracking-widest text-sm">{t("back_to_gallery")}</span>
                 </Link>
             </div>
 
@@ -68,7 +70,7 @@ export function ShowcaseDetailClient({ packageData }: ShowcaseDetailClientProps)
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-zinc-700">
-                                    NO MEDIA
+                                    {t("no_media")}
                                 </div>
                             )}
                         </div>
@@ -81,8 +83,8 @@ export function ShowcaseDetailClient({ packageData }: ShowcaseDetailClientProps)
                                         key={item.id}
                                         onClick={() => setActiveMedia(item)}
                                         className={`shrink-0 w-32 aspect-video rounded-lg overflow-hidden border-2 transition-all ${activeMedia?.id === item.id
-                                                ? "border-red-500 shadow-lg shadow-red-900/20 scale-105"
-                                                : "border-zinc-800 opacity-60 hover:opacity-100 hover:scale-105"
+                                            ? "border-red-500 shadow-lg shadow-red-900/20 scale-105"
+                                            : "border-zinc-800 opacity-60 hover:opacity-100 hover:scale-105"
                                             }`}
                                     >
                                         <img
@@ -113,7 +115,7 @@ export function ShowcaseDetailClient({ packageData }: ShowcaseDetailClientProps)
                                 </span>
                                 {packageData.is_sold_out && (
                                     <span className="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-bold uppercase tracking-widest border border-zinc-700">
-                                        Sold Out
+                                        {t("sold_out")}
                                     </span>
                                 )}
                             </div>
@@ -124,7 +126,7 @@ export function ShowcaseDetailClient({ packageData }: ShowcaseDetailClientProps)
 
                             {/* Composition / Included Items */}
                             <div className="mb-8">
-                                <h3 className="text-sx font-bold text-zinc-500 uppercase tracking-widest mb-4">Included In Package</h3>
+                                <h3 className="text-sx font-bold text-zinc-500 uppercase tracking-widest mb-4">{t("included_items")}</h3>
                                 <div className="grid grid-cols-1 gap-3">
                                     {packageData.composition.map((item, idx) => (
                                         <div key={idx} className="flex items-center gap-3 p-3 bg-zinc-900/50 rounded border border-zinc-800/50">
@@ -138,7 +140,7 @@ export function ShowcaseDetailClient({ packageData }: ShowcaseDetailClientProps)
                             {/* Specs */}
                             {packageData.specs && (
                                 <div className="mb-12">
-                                    <h3 className="text-sx font-bold text-zinc-500 uppercase tracking-widest mb-4">Specifications</h3>
+                                    <h3 className="text-sx font-bold text-zinc-500 uppercase tracking-widest mb-4">{t("specifications")}</h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         {Object.entries(packageData.specs).map(([key, value]) => (
                                             <div key={key}>
@@ -154,11 +156,11 @@ export function ShowcaseDetailClient({ packageData }: ShowcaseDetailClientProps)
                             <button
                                 disabled={packageData.is_sold_out}
                                 className={`w-full py-5 text-xl font-black uppercase tracking-widest transition-all clip-path-slant ${packageData.is_sold_out
-                                        ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                                        : "bg-red-600 hover:bg-white hover:text-black text-white"
+                                    ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                                    : "bg-red-600 hover:bg-white hover:text-black text-white"
                                     }`}
                             >
-                                {packageData.is_sold_out ? "Sold Out" : "Purchase License"}
+                                {packageData.is_sold_out ? t("sold_out") : t("purchase_license")}
                             </button>
 
                         </motion.div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useInView, useMotionValue, useSpring } from "framer-motion";
 import { ShoppingBag, MessageSquare } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface StatProps {
     label: string;
@@ -39,9 +40,11 @@ function Counter({ value }: { value: number }) {
 }
 
 export function DashboardStats({ orderCount = 0, inquiryCount = 0 }) {
+    const t = useTranslations("MyPage");
+
     const stats: StatProps[] = [
-        { label: "MY ORDERS", value: orderCount, icon: ShoppingBag },
-        { label: "INQUIRIES", value: inquiryCount, icon: MessageSquare },
+        { label: t("stats_orders"), value: orderCount, icon: ShoppingBag },
+        { label: t("stats_inquiries"), value: inquiryCount, icon: MessageSquare },
     ];
 
     return (

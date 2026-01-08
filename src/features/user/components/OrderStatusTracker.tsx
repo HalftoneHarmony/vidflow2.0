@@ -9,7 +9,6 @@ interface OrderStatusTrackerProps {
 
 const STAGES = [
     { id: "WAITING", label: "대기중", icon: Clock },
-    { id: "SHOOTING", label: "촬영중", icon: Video },
     { id: "EDITING", label: "편집중", icon: Film },
     { id: "READY", label: "출고대기", icon: Check },
     { id: "DELIVERED", label: "전송완료", icon: Send },

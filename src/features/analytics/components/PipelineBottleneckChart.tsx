@@ -32,8 +32,6 @@ type Props = {
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
     waiting: { label: "대기", color: "#f59e0b", icon: Clock },
     WAITING: { label: "대기", color: "#f59e0b", icon: Clock },
-    shooting: { label: "촬영", color: "#3b82f6", icon: Zap },
-    SHOOTING: { label: "촬영", color: "#3b82f6", icon: Zap },
     editing: { label: "편집", color: "#8b5cf6", icon: Zap },
     EDITING: { label: "편집", color: "#8b5cf6", icon: Zap },
     ready: { label: "완료", color: "#22c55e", icon: CheckCircle },

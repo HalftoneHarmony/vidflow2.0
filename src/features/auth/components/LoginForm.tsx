@@ -7,13 +7,14 @@ import { login } from "../actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 /**
  * 🔐 Login Form
  * Heavy Metal Style Input & Action
  */
 
-function SubmitButton() {
+function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
     const { pending } = useFormStatus();
 
     return (
@@ -26,10 +27,10 @@ function SubmitButton() {
             {pending ? (
                 <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Accessing...
+                    {pendingLabel}
                 </>
             ) : (
-                "Access System"
+                label
             )}
         </Button>
     );
@@ -38,22 +39,23 @@ function SubmitButton() {
 export function LoginForm() {
     const [state, formAction] = useActionState(login, { error: "" });
     const [showPassword, setShowPassword] = useState(false);
+    const t = useTranslations("Auth");
 
     return (
         <div className="space-y-6">
             <div className="space-y-2 text-center lg:text-left">
                 <h2 className="text-3xl font-bold font-[family-name:var(--font-oswald)] uppercase tracking-wide text-white">
-                    System Login
+                    {t('login_title')}
                 </h2>
                 <p className="text-zinc-500 font-light">
-                    Enter your credentials to access the engine.
+                    {t('slogan_1')} {t('slogan_2')}
                 </p>
             </div>
 
             <form action={formAction} className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="email">
-                        Email Address
+                        {t('label_email')}
                     </label>
                     <Input
                         id="email"
@@ -70,13 +72,13 @@ export function LoginForm() {
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest" htmlFor="password">
-                            Password
+                            {t('label_password')}
                         </label>
                         <Link
                             href="/forgot-password"
                             className="text-xs text-red-500 hover:text-red-400 transition-colors uppercase tracking-wider"
                         >
-                            Forgot Password?
+                            {t('btn_forgot_password')}
                         </Link>
                     </div>
                     <div className="relative">
@@ -114,15 +116,15 @@ export function LoginForm() {
                 )}
 
                 <div className="pt-4">
-                    <SubmitButton />
+                    <SubmitButton label={t('btn_login')} pendingLabel="Accessing..." />
                 </div>
             </form>
 
             <div className="text-center">
                 <p className="text-zinc-500 text-sm">
-                    Don't have an account?{" "}
+                    {t('link_no_account')}{" "}
                     <Link href="/join" className="text-white hover:text-red-500 font-bold transition-colors uppercase tracking-wider">
-                        Create Account
+                        {t('join_title')}
                     </Link>
                 </p>
             </div>
